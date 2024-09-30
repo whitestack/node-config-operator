@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: namespace
+    app.kubernetes.io/instance: system
+    app.kubernetes.io/component: manager
+    app.kubernetes.io/created-by: node-config-operator
+    app.kubernetes.io/part-of: node-config-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: controller-manager
+  namespace: system
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: deployment
+    app.kubernetes.io/instance: controller-manager
+    app.kubernetes.io/component: manager
+    app.kubernetes.io/created-by: node-config-operator
+    app.kubernetes.io/part-of: node-config-operator
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: controller-manager
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      hostNetwork: true
+      hostPID: true
+      hostIPC: true
+      containers:
+      - command:
+        - /manager
+        image: ghcr.io/whitestack/node-config-operator:latest
+        name: manager
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: HOSTFS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: manager-config
+              key: HOSTFS_ENABLED
+        - name: APT_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: manager-config
+              key: APT_ENABLED
+        securityContext:
+          privileged: true
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        volumeMounts:
+        - name: sysctl-d
+          mountPath: /etc/sysctl.d
+        - name: sysctl
+          mountPath: /etc/sysctl.conf
+        - name: modules-load-d
+          mountPath: /etc/modules-load.d
+        - name: lib-modules
+          mountPath: /lib/modules
+        - name: hosts
+          mountPath: /etc/host/hosts
+        - name: host-fs
+          mountPath: /host
+      serviceAccountName: controller-manager
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: sysctl-d
+        hostPath:
+          path: /etc/sysctl.d
+          type: DirectoryOrCreate
+      - name: sysctl
+        hostPath:
+          path: /etc/sysctl.conf
+          type: FileOrCreate
+      - name: modules-load-d
+        hostPath:
+          path: /etc/modules-load.d
+          type: DirectoryOrCreate
+      - name: lib-modules
+        hostPath:
+          path: /lib/modules
+          type: Directory
+      - name: hosts
+        hostPath:
+          path: /etc/hosts
+          type: File
+      - name: host-fs
+        hostPath:
+          path: /
+          type: Directory

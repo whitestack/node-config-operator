@@ -1,0 +1,49 @@
+diff --git a/chart/templates/daemonset.yaml b/chart/templates/daemonset.yaml
+index 8bb7b88..20f9a38 100644
+--- a/chart/templates/daemonset.yaml
++++ b/chart/templates/daemonset.yaml
+@@ -103,11 +103,17 @@ spec:
+           name: lib-modules
+         - mountPath: /etc/host/hosts
+           name: hosts
++        {{- if .Values.managerConfig.hostfsEnabled }}
+         - mountPath: /host
+           name: host-fs
++        {{- end }}
++      {{- if .Values.managerConfig.hostfsEnabled }}
+       hostIPC: true
++      {{- end }}
+       hostNetwork: true
++      {{- if .Values.managerConfig.hostfsEnabled }}
+       hostPID: true
++      {{- end }}
+       serviceAccountName: {{ include "chart.fullname" . }}-controller-manager
+       terminationGracePeriodSeconds: 10
+       tolerations:
+@@ -138,7 +144,9 @@ spec:
+           path: /etc/hosts
+           type: File
+         name: hosts
++      {{- if .Values.managerConfig.hostfsEnabled }}
+       - hostPath:
+           path: /
+           type: Directory
+-        name: host-fs
+\ No newline at end of file
++        name: host-fs
++      {{- end }}
+diff --git a/chart/values.yaml b/chart/values.yaml
+index f77017d..299b600 100644
+--- a/chart/values.yaml
++++ b/chart/values.yaml
+@@ -40,8 +40,8 @@ controllerManager:
+     annotations: {}
+ kubernetesClusterDomain: cluster.local
+ managerConfig:
+-  aptEnabled: "false"
+-  hostfsEnabled: "false"
++  aptEnabled: false
++  hostfsEnabled: false
+ metricsService:
+   ports:
+   - name: https

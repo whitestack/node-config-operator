@@ -1,0 +1,10 @@
+annotations:
+  catalog.cattle.io/display-name: Node Config Operator
+  catalog.cattle.io/namespace: nco-system
+  catalog.cattle.io/release-name: nco
+apiVersion: v2
+name: node-config-operator
+description: Operator to configure Kubernetes' nodes
+type: application
+version: 0.1.0
+appVersion: "v0.1.0"

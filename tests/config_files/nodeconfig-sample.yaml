@@ -1,0 +1,64 @@
+apiVersion: configuration.whitestack.com/v1beta1
+kind: NodeConfig
+metadata:
+  labels:
+    app.kubernetes.io/name: nodeconfig
+    app.kubernetes.io/instance: nodeconfig-sample
+    app.kubernetes.io/part-of: node-config-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: node-config-operator
+  name: nodeconfig-sample
+spec:
+  kernelParameters:
+    parameters:
+    - name: fs.file-max
+      value: "54321"
+    - name: net.ipv4.udp_mem
+      value: "12348030 16464042 24696060"
+    state: present
+  hosts:
+    hosts:
+    # you can add multiple entries for the same IP
+    - hostname: "test.whitestack.com"
+      ip: "10.0.0.1"
+    - hostname: "test2.whitestack.com"
+      ip: "10.0.0.1"
+      # or multiple hostnames separated by spaces
+    - hostname: "test3.whitestack.com test4.whitestack.com"
+      ip: "10.0.0.3"
+    state: present
+  kernelModules:
+    modules:
+    - openvswitch
+    state: present
+  systemdUnits:
+    units:
+    - name: test-service
+      file: |
+        [Unit]
+        Description=example systemd service unit file.
+
+        [Service]
+        ExecStart=sleep 1000
+
+        [Install]
+        WantedBy=multi-user.target
+    state: present
+  systemdOverrides:
+    overrides:
+    - name: nco-test-service.service
+      file: |-
+        [Service]
+        ExecStart=
+        ExecStart=sleep 2000
+        User=root
+    state: present
+  blockInFiles:
+    blocks:
+    - filename: "/test.file"
+      content: |
+        test1
+        test2
+      beginMarker: "# NCO BEGIN MARKER"
+      endMarker: "# NCO END MARKER"
+    state: present

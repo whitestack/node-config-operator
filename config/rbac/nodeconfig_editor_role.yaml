@@ -1,0 +1,31 @@
+# permissions for end users to edit nodeconfigs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: nodeconfig-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: node-config-operator
+    app.kubernetes.io/part-of: node-config-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: nodeconfig-editor-role
+rules:
+- apiGroups:
+  - configuration.whitestack.com
+  resources:
+  - nodeconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - configuration.whitestack.com
+  resources:
+  - nodeconfigs/status
+  verbs:
+  - get

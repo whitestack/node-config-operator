@@ -1,0 +1,44 @@
+name: ci
+on:
+  push:
+    tags:
+    - "*"
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Setup go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '=1.20.14'
+    - name: Create image name with tag
+      run: echo "IMG=ghcr.io/whitestack/node-config-operator:${GITHUB_REF_NAME}" >> $GITHUB_ENV
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build image
+      run: make docker-build "IMG=${IMG}"
+    - name: Push image
+      run: make docker-push "IMG=${IMG}"
+  push-chart:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Push chart
+      uses: appany/helm-oci-chart-releaser@v0.3.0
+      with:
+        name: node-config-operator
+        repository: whitestack
+        tag: ${{ github.ref_name }}-chart
+        path: chart/
+        registry: ghcr.io
+        registry_username: ${{ github.repository_owner }}
+        registry_password: ${{ secrets.GITHUB_TOKEN }}
