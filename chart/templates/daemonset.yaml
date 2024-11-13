@@ -54,6 +54,7 @@ spec:
         securityContext: {{- toYaml .Values.controllerManager.kubeRbacProxy.containerSecurityContext
           | nindent 10 }}
       - args: {{- toYaml .Values.controllerManager.manager.args | nindent 8 }}
+        - --health-probe-bind-address=:{{ .Values.controllerManager.manager.healthPort }}
         command:
         - /manager
         env:
@@ -78,14 +79,14 @@ spec:
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 8081
+            port: {{ .Values.controllerManager.manager.healthPort }}
           initialDelaySeconds: 15
           periodSeconds: 20
         name: manager
         readinessProbe:
           httpGet:
             path: /readyz
-            port: 8081
+            port: {{ .Values.controllerManager.manager.healthPort }}
           initialDelaySeconds: 5
           periodSeconds: 10
         resources: {{- toYaml .Values.controllerManager.manager.resources | nindent 10
