@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -18,6 +19,11 @@ type Config interface {
 }
 
 func writeFile(filePath string, content string) error {
+	dir := filepath.Dir(filePath)
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		return err
+	}
 	file, err := os.Create(filePath)
 	if err != nil {
 		return err
@@ -47,6 +53,22 @@ func checkFileContents(filePath, lines string) (bool, error) {
 	}
 
 	if strings.Trim(string(content), "\n") != strings.Trim(lines, "\n") {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func checkFileContains(filePath, lines string) (bool, error) {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	if !strings.Contains(strings.Trim(string(content), "\n"), strings.Trim(lines, "\n")) {
 		return false, nil
 	}
 

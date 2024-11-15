@@ -14,13 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package v1beta2
 
 import (
-	"bitbucket.org/whitestack/node-config-operator/api/v1beta2"
 	"bitbucket.org/whitestack/node-config-operator/pkg/modules"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -45,6 +43,8 @@ type NodeConfigSpec struct {
 	AptPackages modules.AptPackages `json:"aptPackages,omitempty"`
 	// List of blocks to add to files
 	BlockInFiles modules.BlockInFiles `json:"blockInFiles,omitempty"`
+	// List of Certificates to add to /etc/ssl/certs
+	Certificates modules.Certificates `json:"certificates,omitempty"`
 
 	// Defines the target nodes for this NodeConfig (optional, default is apply to all nodes)
 	NodeSelector []metav1.LabelSelectorRequirement `json:"nodeSelector,omitempty"`
@@ -58,6 +58,7 @@ type NodeConfigStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:storageversion
 
 // NodeConfig is the Schema for the nodeconfigs API
 type NodeConfig struct {
@@ -81,38 +82,4 @@ func init() {
 	SchemeBuilder.Register(&NodeConfig{}, &NodeConfigList{})
 }
 
-// ConvertTo converts this v1beta1 to v1beta2. (upgrade)
-func (src *NodeConfig) ConvertTo(dstRaw conversion.Hub) error {
-
-	dst := dstRaw.(*v1beta2.NodeConfig)
-	dst.ObjectMeta = src.ObjectMeta
-
-	dst.Spec.KernelParameters = src.Spec.KernelParameters
-	dst.Spec.KernelModules = src.Spec.KernelModules
-	dst.Spec.SystemdUnits = src.Spec.SystemdUnits
-	dst.Spec.SystemdOverrides = src.Spec.SystemdOverrides
-	dst.Spec.Hosts = src.Spec.Hosts
-	dst.Spec.AptPackages = src.Spec.AptPackages
-	dst.Spec.BlockInFiles = src.Spec.BlockInFiles
-	dst.Spec.NodeSelector = src.Spec.NodeSelector
-
-	return nil
-}
-
-// ConvertFrom converts from the Hub version (v1beta2) to (v1beta1). (downgrade)
-func (dst *NodeConfig) ConvertFrom(srcRaw conversion.Hub) error {
-
-	src := srcRaw.(*v1beta2.NodeConfig)
-	dst.ObjectMeta = src.ObjectMeta
-
-	dst.Spec.KernelParameters = src.Spec.KernelParameters
-	dst.Spec.KernelModules = src.Spec.KernelModules
-	dst.Spec.SystemdUnits = src.Spec.SystemdUnits
-	dst.Spec.SystemdOverrides = src.Spec.SystemdOverrides
-	dst.Spec.Hosts = src.Spec.Hosts
-	dst.Spec.AptPackages = src.Spec.AptPackages
-	dst.Spec.BlockInFiles = src.Spec.BlockInFiles
-	dst.Spec.NodeSelector = src.Spec.NodeSelector
-
-	return nil
-}
+func (*NodeConfig) Hub() {}
