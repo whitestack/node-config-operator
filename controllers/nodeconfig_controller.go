@@ -39,7 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	configurationv1 "bitbucket.org/whitestack/node-config-operator/api/v1beta1"
+	configurationv1beta2 "bitbucket.org/whitestack/node-config-operator/api/v1beta2"
 	"bitbucket.org/whitestack/node-config-operator/pkg/modules"
 )
 
@@ -71,7 +71,7 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	logger := logging.WithValues("objectName", req.Name, "node", os.Getenv("NODE_NAME"))
 	configs := []modules.Config{}
 
-	nodeConfig := &configurationv1.NodeConfig{}
+	nodeConfig := &configurationv1beta2.NodeConfig{}
 	err := r.Get(ctx, req.NamespacedName, nodeConfig)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
@@ -155,6 +155,16 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		)
 	}
 
+	if len(nodeConfig.Spec.Certificates.Certificates) != 0 {
+		configs = append(
+			configs,
+			modules.CertificateConfig{
+				Certificates: nodeConfig.Spec.Certificates,
+				Log:          logger.WithName("certificates"),
+			},
+		)
+	}
+
 	if len(nodeConfig.Spec.SystemdOverrides.Overrides) != 0 {
 		configs = append(
 			configs,
@@ -217,7 +227,7 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 // SetupWithManager sets up the controller with the Manager.
 func (r *NodeConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	err := ctrl.NewControllerManagedBy(mgr).
-		For(&configurationv1.NodeConfig{}).
+		For(&configurationv1beta2.NodeConfig{}).
 		Complete(r)
 	if err != nil {
 		return err
@@ -235,7 +245,7 @@ func (r *NodeConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			},
 			handler.EnqueueRequestsFromMapFunc(
 				func(a client.Object) []reconcile.Request {
-					routes := &configurationv1.NodeConfigList{}
+					routes := &configurationv1beta2.NodeConfigList{}
 					if err := r.List(context.Background(), routes); err != nil {
 						logging.Error(err, "Failed to list NodeConfigs")
 						return nil
@@ -283,7 +293,7 @@ func (r *NodeConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // checkNodeBySelector returns true if the current node matches the
 // nodeSelector in the nodeConfig object, returning an error if any
 // function call fails
-func checkNodeBySelector(c client.Client, nodeConfig *configurationv1.NodeConfig, logger logr.Logger) (bool, error) {
+func checkNodeBySelector(c client.Client, nodeConfig *configurationv1beta2.NodeConfig, logger logr.Logger) (bool, error) {
 	nodes := &corev1.NodeList{}
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
 		MatchExpressions: append(nodeConfig.Spec.NodeSelector,

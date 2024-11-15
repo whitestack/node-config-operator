@@ -133,3 +133,23 @@ check_block_in_files() {
         fi
     done
 }
+
+check_certificates() {
+    local node_name=$1
+
+    echo "❗ Warning: Checking the certificates module is not possible in Minikube"
+
+    #for idx in $(yq '.spec.certificates.certificates | keys' $NODECONFIG_FILE | wc -l); do
+    #    local filename="/etc/ssl/certs/ca-certificates.crt"
+    #    local content=$(yq ".spec.certificates.certificates[$((idx-1))].content" $NODECONFIG_FILE | tr '\n' ',')
+    #    echo "➖ Checking certificate on file $filename..."
+    #    local check_cmd="cat $filename | tr '\n' ',' | grep -F '$content'"
+    #    run_on_node "$node_name" "$check_cmd" > /dev/null
+    #    local rc=$?
+    #    if [ $rc -eq 0 ]; then
+    #        echo "✅ Success: certificate in file $filename is correct on $node_name"
+    #    else
+    #        echo "❌ Error: certificate in file $filename is not correct on $node_name"
+    #    fi
+    #done
+}

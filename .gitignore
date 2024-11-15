@@ -28,3 +28,4 @@ Dockerfile.cross
 .envrc
 .mise.toml
 tests/.kube/
+tests/minikube-*
