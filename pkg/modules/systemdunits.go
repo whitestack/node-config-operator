@@ -13,9 +13,9 @@ import (
 
 // +kubebuilder:object:generate=true
 type SystemdUnits struct {
-	Units []SystemdUnit `json:"units"`
+	Units []SystemdUnit `json:"units,omitempty"`
 	// +kubebuilder:Enum="present";"absent"
-	State string `json:"state"`
+	State string `json:"state,omitempty"`
 }
 
 type SystemdUnit struct {

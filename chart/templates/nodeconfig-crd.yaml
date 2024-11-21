@@ -54,9 +54,6 @@ spec:
                     - present
                     - absent
                     type: string
-                required:
-                - packages
-                - state
                 type: object
               blockInFiles:
                 description: List of blocks to add to files
@@ -85,9 +82,6 @@ spec:
                     type: array
                   state:
                     type: string
-                required:
-                - blocks
-                - state
                 type: object
               hosts:
                 description: List of hosts to install to /etc/hosts
@@ -106,9 +100,6 @@ spec:
                     type: array
                   state:
                     type: string
-                required:
-                - hosts
-                - state
                 type: object
               kernelModules:
                 description: List of kernel modules to load
@@ -119,9 +110,6 @@ spec:
                     type: array
                   state:
                     type: string
-                required:
-                - modules
-                - state
                 type: object
               kernelParameters:
                 description: List of kernel parameters (sysctl). Each parameter should
@@ -140,9 +128,6 @@ spec:
                     type: array
                   state:
                     type: string
-                required:
-                - parameters
-                - state
                 type: object
               nodeSelector:
                 description: Defines the target nodes for this NodeConfig (optional,
@@ -191,9 +176,6 @@ spec:
                     type: array
                   state:
                     type: string
-                required:
-                - overrides
-                - state
                 type: object
               systemdUnits:
                 description: List of systemd units to install
@@ -214,9 +196,6 @@ spec:
                       - name
                       type: object
                     type: array
-                required:
-                - state
-                - units
                 type: object
             type: object
           status:
