@@ -4,25 +4,18 @@
 NUM_NODES="${1:-3}"
 
 # Check if the second argument is set, otherwise default to "config_files/nodeconfig-sample.yaml"
-CONFIG_FILE="${2:-"config_files/nodeconfig-sample.yaml"}"
+NODECONFIG_FILE="${2:-"config_files/nodeconfigv1beta1-sample.yaml"}"
+NODECONFIG_FILE_2="${2:-"config_files/nodeconfigv1beta2-sample.yaml"}"
 
 # Define directories, and file paths
-OPERATOR_DIR="../"
 OPERATOR_CHART_DIR="../chart"
-CONFIGFILES_DIR="config_files/"
 KUBECONFIG=".kube/minikube-config"
 
 export KUBECONFIG
 
 # Check if the specified test script file exists
-if [ -e "$CONFIG_FILE" ]; then
-    NODECONFIG_FILE="$CONFIG_FILE"
-elif [ -e "$CONFIGFILES_DIR$CONFIG_FILE" ]; then
-    NODECONFIG_FILE="$CONFIGFILES_DIR$CONFIG_FILE"
-elif [ -e "$OPERATOR_DIR$CONFIG_FILE" ]; then
-    NODECONFIG_FILE="$OPERATOR_DIR$CONFIG_FILE"
-else
-    echo "❌  Error: The specified node config file does not exist: $CONFIG_FILE"
+if ![ -e "$NODECONFIG_FILE" ]; then
+    echo "❌  Error: The specified node config file does not exist: $NODECONFIG_FILE"
     exit 1
 fi
 
@@ -34,14 +27,15 @@ command_exists() {
 # Function to start Minikube
 start_minikube() {
     local num_nodes=$1
+    echo "🔨  Deploying cert-manager using Helm..."
     echo "📦  Starting Minikube cluster with $num_nodes nodes..."
-    if ! minikube start --nodes=$num_nodes --apiserver-port=6443; then
+    if ! minikube start --apiserver-port=6443 --vm=true --driver=kvm2 --nodes=$num_nodes; then
         echo "❌  Error: Failed to start Minikube cluster."
         exit 1
     fi
 
     # Load image to cluster
-	  minikube image load node-config-operator:test
+	minikube image load node-config-operator:test
 }
 
 # Function to verify cluster accessibility and functionality
@@ -68,6 +62,20 @@ create_ns_context(){
     kubectl config use-context nco-tests-context &> /dev/null
 }
 
+# Function to deploy cert-manager
+deploy_cert_manager() {
+    echo "🖌️  Creating namespace cert-manager..."
+    kubectl create namespace cert-manager
+    echo "🖌️  Adding Jetstack helm repo..."
+    helm repo add jetstack https://charts.jetstack.io --force-update
+    echo "🔨  Deploying cert-manager using Helm..."
+    helm install cert-manager jetstack/cert-manager \
+        -n cert-manager \
+        --kube-context=nco-tests-context \
+        --set crds.enabled=true \
+        --set prometheus.enabled=false
+}
+
 # Function to deploy the node-config-operator
 deploy_operator() {
     echo "🔨  Deploying node-config-operator using Helm..."
@@ -77,16 +85,27 @@ deploy_operator() {
         --set managerConfig.hostfsEnabled=true \
         --set controllerManager.manager.image.tag=test \
         --set controllerManager.manager.image.repository=node-config-operator
+    kubectl wait --for=condition=ready pod -n nco-tests-ns -l app.kubernetes.io/name=node-config-operator --timeout=60s
 }
 
-# Function to run tests
-run_tests() {
-    echo "🔩  Applying test node configurations and waiting before executing tests..."
+# Function to run v1beta1 tests
+run_v1beta1_tests() {
+    echo "🔩  Applying v1beta1 test node configurations and waiting before executing tests..."
     kubectl apply -f "$NODECONFIG_FILE" -n nco-tests-ns
     sleep 60
     echo "📄  Running specific tests..."
     chmod +x tests.sh
     ./tests.sh $NODECONFIG_FILE
+}
+
+# Function to run v1beta2 tests
+run_v1beta2_tests() {
+    echo "🔩  Applying v1beta2 test node configurations and waiting before executing tests..."
+    kubectl apply -f "$NODECONFIG_FILE_2" -n nco-tests-ns
+    sleep 60
+    echo "📄  Running specific tests..."
+    chmod +x tests.sh
+    ./tests.sh $NODECONFIG_FILE_2
 }
 
 # Function to perform cleanup
@@ -141,10 +160,16 @@ verify_cluster
 # Create namespace and context
 create_ns_context
 
+# Deploy cert-manager
+deploy_cert_manager
+
 # Deploy the node-config-operator
 deploy_operator
 
-# Run the tests
-run_tests
+# Run the v1beta1 tests
+run_v1beta1_tests
+
+# Run the v1beta2 tests
+run_v1beta2_tests
 
 echo "🔚  Tests completed."

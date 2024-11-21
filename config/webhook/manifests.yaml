@@ -1,0 +1,54 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: mutating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-configuration-whitestack-com-v1beta2-nodeconfig
+  failurePolicy: Fail
+  name: mnodeconfig.kb.io
+  rules:
+  - apiGroups:
+    - configuration.whitestack.com
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - nodeconfigs
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-configuration-whitestack-com-v1beta2-nodeconfig
+  failurePolicy: Fail
+  name: vnodeconfig.kb.io
+  rules:
+  - apiGroups:
+    - configuration.whitestack.com
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - nodeconfigs
+  sideEffects: None

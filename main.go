@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	configurationv1 "bitbucket.org/whitestack/node-config-operator/api/v1beta1"
+	configurationv1beta2 "bitbucket.org/whitestack/node-config-operator/api/v1beta2"
 	"bitbucket.org/whitestack/node-config-operator/controllers"
 	"bitbucket.org/whitestack/node-config-operator/pkg/modules"
 	//+kubebuilder:scaffold:imports
@@ -50,6 +51,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(configurationv1.AddToScheme(scheme))
+	utilruntime.Must(configurationv1beta2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -104,6 +106,10 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "NodeConfig")
+		os.Exit(1)
+	}
+	if err = (&configurationv1beta2.NodeConfig{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "NodeConfig")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

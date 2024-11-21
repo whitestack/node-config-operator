@@ -8,7 +8,7 @@ the same way as all kubernetes objects.
 1. Write your manifest, for instance:
 
 ```yaml
-apiVersion: configuration.whitestack.com/v1beta1
+apiVersion: configuration.whitestack.com/v1beta2
 kind: NodeConfig
 metadata:
   name: nodeconfig-sample
@@ -42,7 +42,7 @@ following procedure:
 1. Edit the `NodeConfig` object and add a `nodeSelector` with the same label:
 
 ```yaml
-apiVersion: configuration.whitestack.com/v1beta1
+apiVersion: configuration.whitestack.com/v1beta2
 kind: NodeConfig
 metadata:
   name: nodeconfig-sample
