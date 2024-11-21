@@ -9,9 +9,9 @@ import (
 
 // +kubebuilder:object:generate=true
 type Hosts struct {
-	Hosts []Host `json:"hosts"`
+	Hosts []Host `json:"hosts,omitempty"`
 	// +kubebuilder:Enum="present";"absent"
-	State string `json:"state"`
+	State string `json:"state,omitempty"`
 }
 
 type Host struct {
