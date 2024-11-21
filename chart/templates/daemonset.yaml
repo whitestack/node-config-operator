@@ -83,6 +83,10 @@ spec:
           initialDelaySeconds: 15
           periodSeconds: 20
         name: manager
+        ports:
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
         readinessProbe:
           httpGet:
             path: /readyz
@@ -94,6 +98,9 @@ spec:
         securityContext: {{- toYaml .Values.controllerManager.manager.containerSecurityContext
           | nindent 10 }}
         volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
         - mountPath: /etc/sysctl.d
           name: sysctl-d
         - mountPath: /etc/sysctl.conf
@@ -125,6 +132,10 @@ spec:
         key: node-role.kubernetes.io/master
         operator: Exists
       volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: webhook-server-cert
       - hostPath:
           path: /etc/sysctl.d
           type: DirectoryOrCreate
