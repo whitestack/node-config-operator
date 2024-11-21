@@ -13,9 +13,9 @@ import (
 
 // +kubebuilder:object:generate=true
 type KernelParameters struct {
-	Parameters []KernelParameterKV `json:"parameters"`
+	Parameters []KernelParameterKV `json:"parameters,omitempty"`
 	// +kubebuilder:Enum="present";"absent"
-	State string `json:"state"`
+	State string `json:"state,omitempty"`
 }
 
 type KernelParameterKV struct {
