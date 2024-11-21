@@ -10,7 +10,7 @@ index 20f9a38..98b89ec 100644
          command:
          - /manager
          env:
-@@ -78,14 +79,14 @@ spec:
+@@ -78,7 +79,7 @@ spec:
          livenessProbe:
            httpGet:
              path: /healthz
@@ -19,6 +19,7 @@ index 20f9a38..98b89ec 100644
            initialDelaySeconds: 15
            periodSeconds: 20
          name: manager
+@@ -89,7 +90,7 @@ spec:
          readinessProbe:
            httpGet:
              path: /readyz

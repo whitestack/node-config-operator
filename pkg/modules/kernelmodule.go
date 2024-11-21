@@ -13,9 +13,9 @@ import (
 
 // +kubebuilder:object:generate=true
 type KernelModules struct {
-	Modules []string `json:"modules"`
+	Modules []string `json:"modules,omitempty"`
 	// +kubebuilder:Enum="present";"absent"
-	State string `json:"state"`
+	State string `json:"state,omitempty"`
 }
 
 type KernelModule = string

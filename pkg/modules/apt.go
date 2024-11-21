@@ -13,9 +13,9 @@ import (
 
 // +kubebuilder:object:generate=true
 type AptPackages struct {
-	Packages []AptPackage `json:"packages"`
+	Packages []AptPackage `json:"packages,omitempty"`
 	// +kubebuilder:validation:Enum="present";"absent"
-	State string `json:"state"`
+	State string `json:"state,omitempty"`
 }
 
 type AptPackage struct {

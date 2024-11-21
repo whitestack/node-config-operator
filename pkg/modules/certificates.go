@@ -16,9 +16,9 @@ const (
 
 // +kubebuilder:object:generate=true
 type Certificates struct {
-	Certificates []Certificate `json:"certificates"`
+	Certificates []Certificate `json:"certificates,omitempty"`
 	// +kubebuilder:Enum="present";"absent"
-	State string `json:"state"`
+	State string `json:"state,omitempty"`
 }
 
 type Certificate struct {
