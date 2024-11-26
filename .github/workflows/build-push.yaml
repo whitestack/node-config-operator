@@ -36,8 +36,8 @@ jobs:
       uses: appany/helm-oci-chart-releaser@v0.3.0
       with:
         name: node-config-operator
-        repository: whitestack
-        tag: ${{ github.ref_name }}-chart
+        repository: whitestack/charts
+        tag: ${{ github.ref_name }}
         path: chart/
         registry: ghcr.io
         registry_username: ${{ github.repository_owner }}
