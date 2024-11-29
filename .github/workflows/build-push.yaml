@@ -32,12 +32,14 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+    - name: Get version name without v
+      run: echo "ERSION=$(echo ${{ github.ref_name }} | sed -e 's/^v//')" >> $GITHUB_ENV
     - name: Push chart
       uses: appany/helm-oci-chart-releaser@v0.3.0
       with:
         name: node-config-operator
         repository: whitestack/charts
-        tag: ${{ github.ref_name }}
+        tag: ${{ env.ERSION }}
         path: chart/
         registry: ghcr.io
         registry_username: ${{ github.repository_owner }}
