@@ -134,6 +134,7 @@ _Appears in:_
 | `aptPackages` _[AptPackages](#aptpackages)_ | List of apt packages to install |
 | `blockInFiles` _[BlockInFiles](#blockinfiles)_ | List of blocks to add to files |
 | `certificates` _[Certificates](#certificates)_ | List of Certificates to add to /etc/ssl/certs |
+| `crontabs` _[Crontabs](#crontabs)_ | List of Crontabs to schedule |
 | `nodeSelector` _[LabelSelectorRequirement](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#labelselectorrequirement-v1-meta) array_ | Defines the target nodes for this NodeConfig (optional, default is apply to all nodes) |
 
 

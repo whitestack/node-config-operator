@@ -200,15 +200,3 @@ func (s SystemdUnitConfig) checkCurrentConfig() (bool, error) {
 
 	return true, nil
 }
-
-func checkIfServiceIsActive(serviceName string) (bool, error) {
-	output, err := execChroot("systemctl", "check", serviceName)
-	if err != nil {
-		if _, ok := err.(*exec.ExitError); ok {
-			return false, fmt.Errorf("service failed to start: %s", output)
-		} else {
-			return false, fmt.Errorf("failed to check if service is active: %w", err)
-		}
-	}
-	return true, nil
-}

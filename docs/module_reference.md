@@ -272,3 +272,46 @@ spec:
 
 Will install the latest version of the `vim` package and the required version of
 the `ssh` package.
+
+## Crontabs
+
+Crontab entries can be managed by creating or removing files in the `/etc/cron.d` directory. Each entry specifies a 
+scheduled task to be executed under a specific user. For example, to schedule a daily backup script to run as the `root`
+user, you would create a crontab entry like this:
+
+```shell
+@daily root /usr/bin/backup.sh # daily-backup
+```
+
+This configuration can be applied using the following Custom Resource (CR):
+
+```yaml
+apiVersion: configuration.whitestack.com/v1beta2
+kind: NodeConfig
+metadata:
+  name: nodeconfig-crontab-sample
+spec:
+  crontabs:
+    entries:
+    - name: "daily-backup"
+      special_time: "daily"
+      job: "/usr/bin/backup.sh"
+      user: "root"
+    - name: "hourly-cleanup"
+      minute: "0"
+      hour: "*"
+      dayOfMonth: "*"
+      month: "*"
+      dayOfWeek: "*"
+      job: "/usr/bin/cleanup.sh"
+      user: "root"
+    state: "present"
+```
+
+### Explanation of Fields
+
+**name** : A unique identifier for the cron job. This is used to generate the filename in `/etc/cron.d`.
+**special_time** : (Optional) Specifies a predefined schedule such as `@daily`, `@reboot`, `@weekly`, etc.
+**minute , hour , dayOfMonth , month , dayOfWeek** : (Optional) Define the schedule explicitly. Defaults to `*` if not specified.
+**job** : The command or script to execute.
+**user** : The user under which the task will run.

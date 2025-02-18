@@ -232,3 +232,29 @@ func execChroot(args ...string) ([]byte, error) {
 	cmd := exec.Command("chroot", cmdArgs...)
 	return cmd.CombinedOutput()
 }
+
+// sanitizeFileName converts the name to lowercase and replaces spaces with underscores.
+func sanitizeFileName(name string) string {
+	sanitized := strings.ToLower(name)
+	sanitized = strings.ReplaceAll(sanitized, " ", "_")
+	sanitized = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+			return r
+		}
+		return -1
+	}, sanitized)
+
+	return sanitized
+}
+
+func checkIfServiceIsActive(serviceName string) (bool, error) {
+	output, err := execChroot("systemctl", "check", serviceName)
+	if err != nil {
+		if _, ok := err.(*exec.ExitError); ok {
+			return false, fmt.Errorf("service failed to start: %s", output)
+		} else {
+			return false, fmt.Errorf("failed to check if service is active: %w", err)
+		}
+	}
+	return true, nil
+}

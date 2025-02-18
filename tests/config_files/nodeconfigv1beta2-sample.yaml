@@ -42,3 +42,18 @@ spec:
         LXY2JtwE65/3YR8V3Idv7kaWKK2hJn0KCacuBKONvPi8BDAB
         -----END CERTIFICATE-----
     state: present
+  crontabs:
+    entries:
+      - name: "test special time"
+        special_time: "daily"
+        job: "/usr/bin/test.sh"
+        user: "root"
+      - name: "test hour with minute"
+        minute: "0"
+        hour: "0"
+        dayOfMonth: "*"
+        month: "*"
+        dayOfWeek: "*"
+        job: "/usr/bin/test.sh"
+        user: "root"
+    state: "present"

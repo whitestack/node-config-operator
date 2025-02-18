@@ -12,9 +12,7 @@ run_on_node() {
 # Function to extract the 'spec' section from a YAML file
 extract_spec_values() {
     local file="$1"
-    local spec_section=$(yq eval '.spec' $file)
-    # Parsing the spec section into individual values
-    local specs=($(awk '/^[^[:space:]]/{sub(/:$/, ""); print $0}' <<< "$spec_section"))
+    local specs=$(yq -r '.spec | keys | .[]' $file)
     echo "${specs[@]}"
 }
 
@@ -118,7 +116,6 @@ check_systemd_overrides() {
 
 check_block_in_files() {
     local node_name=$1
-
     for idx in $(yq '.spec.blockInFiles.blocks | keys' $NODECONFIG_FILE | wc -l); do
         local filename=$(yq ".spec.blockInFiles.blocks[$((idx-1))].filename" $NODECONFIG_FILE)
         local content=$(yq ".spec.blockInFiles.blocks[$((idx-1))].content" $NODECONFIG_FILE | tr '\n' ',')
@@ -152,4 +149,59 @@ check_certificates() {
     #        echo "❌ Error: certificate in file $filename is not correct on $node_name"
     #    fi
     #done
+}
+
+check_crontabs() {
+    local node_name=$1
+    echo "Checking crontab entries on node: $node_name"
+
+    # Check if the 'crontabs.entries' section exists
+    local entry_count=$(yq '.spec.crontabs.entries | length' "$NODECONFIG_FILE")
+    if [ "$entry_count" -eq 0 ]; then
+        echo "! WARNING No crontab entries found in the NodeConfig file."
+        return 0
+    fi
+
+    # Iterate over each crontab entry
+    for ((idx = 0; idx < entry_count; idx++)); do
+        # Extract fields from the CR
+        local name=$(yq ".spec.crontabs.entries[$idx].name" "$NODECONFIG_FILE")
+        local sanitized_name=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+        local cron_file="/etc/cron.d/$sanitized_name"
+        local expected_content=""
+
+        # Debugging: Print extracted fields
+        echo "➖ Processing crontab entry '$name' (sanitized: $sanitized_name)..."
+
+        # Build the expected content based on the CR
+        if [ "$(yq ".spec.crontabs.entries[$idx].special_time // null" "$NODECONFIG_FILE")" != "null" ]; then
+            local special_time=$(yq ".spec.crontabs.entries[$idx].special_time" "$NODECONFIG_FILE")
+            local job=$(yq ".spec.crontabs.entries[$idx].job" "$NODECONFIG_FILE")
+            local user=$(yq ".spec.crontabs.entries[$idx].user" "$NODECONFIG_FILE")
+            expected_content="@${special_time} ${user} ${job} # ${name}"
+        else
+            local minute=$(yq ".spec.crontabs.entries[$idx].minute // \"*\"" "$NODECONFIG_FILE")
+            local hour=$(yq ".spec.crontabs.entries[$idx].hour // \"*\"" "$NODECONFIG_FILE")
+            local dayOfMonth=$(yq ".spec.crontabs.entries[$idx].dayOfMonth // \"*\"" "$NODECONFIG_FILE")
+            local month=$(yq ".spec.crontabs.entries[$idx].month // \"*\"" "$NODECONFIG_FILE")
+            local dayOfWeek=$(yq ".spec.crontabs.entries[$idx].dayOfWeek // \"*\"" "$NODECONFIG_FILE")
+            local job=$(yq ".spec.crontabs.entries[$idx].job" "$NODECONFIG_FILE")
+            local user=$(yq ".spec.crontabs.entries[$idx].user" "$NODECONFIG_FILE")
+            expected_content="${minute} ${hour} ${dayOfMonth} ${month} ${dayOfWeek} ${user} ${job} # ${name}"
+        fi
+
+        # Check if the crontab file exists and validate its content
+        echo "➖ Checking crontab file $cron_file on $node_name..."
+        local check_cmd="[ -f $cron_file ] && cat $cron_file"
+        local actual_content=$(run_on_node "$node_name" "$check_cmd" | tr '\n' ',')
+
+        if [[ "$actual_content" == *"$expected_content"* ]]; then
+            echo "✅ Success: Crontab entry '$name' is correct in $cron_file on $node_name"
+        else
+            echo "❌ Error: Crontab entry '$name' is incorrect or missing in $cron_file on $node_name"
+            echo "Expected: $expected_content"
+            echo "Got: $actual_content"
+            exit 1
+        fi
+    done
 }

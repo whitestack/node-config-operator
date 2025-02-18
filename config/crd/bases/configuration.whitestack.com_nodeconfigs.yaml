@@ -296,6 +296,62 @@ spec:
                   state:
                     type: string
                 type: object
+              crontabs:
+                description: List of Crontabs to schedule
+                properties:
+                  entries:
+                    items:
+                      description: Crontab defines an individual crontab entry.
+                      properties:
+                        dayOfMonth:
+                          default: '*'
+                          description: 'DayOfMonth of the month (default: "*")'
+                          type: string
+                        dayOfWeek:
+                          default: '*'
+                          description: 'DayOfWeek of the week (default: "*")'
+                          type: string
+                        hour:
+                          default: '*'
+                          description: 'Hour (default: "*")'
+                          type: string
+                        job:
+                          description: Job command or script to execute
+                          type: string
+                        minute:
+                          default: '*'
+                          description: 'Minute (default: "*")'
+                          type: string
+                        month:
+                          default: '*'
+                          description: 'Month (default: "*")'
+                          type: string
+                        name:
+                          description: Unique identifier for the cron job
+                          type: string
+                        special_time:
+                          description: Special time (reboot, daily, etc.)
+                          enum:
+                          - reboot
+                          - yearly
+                          - annually
+                          - monthly
+                          - weekly
+                          - daily
+                          - hourly
+                          type: string
+                        user:
+                          description: User under which the task will run
+                          type: string
+                      required:
+                      - job
+                      - name
+                      - user
+                      type: object
+                    type: array
+                  state:
+                    type: string
+                type: object
               hosts:
                 description: List of hosts to install to /etc/hosts
                 properties:
