@@ -26,6 +26,7 @@ The available modules are:
 1. block-in-file: adds a block of text in a new or existing file
 1. systemd: adds and starts a new systemd service
 1. systemd-override: adds an override for an existing systemd unit
+1. crontabs: adds crontabs to schedule
 
 And they're applied in this order.
 
@@ -35,6 +36,7 @@ The modules:
 - block-in-file
 - systemd
 - systemd-override
+- crontabs
 
 Require that the Helm value `managerConfig.hostfsEnabled` is set to true as they
 need to mount the whole host filesystem to the pod so they can run executables

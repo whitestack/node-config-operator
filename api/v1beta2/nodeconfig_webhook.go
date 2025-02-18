@@ -74,6 +74,10 @@ func (r *NodeConfig) Default() {
 		r.Spec.Certificates.Certificates = []modules.Certificate{}
 		r.Spec.Certificates.State = "present"
 	}
+	if len(r.Spec.Crontabs.Entries) == 0 {
+		r.Spec.Crontabs.Entries = []modules.Crontab{}
+		r.Spec.Crontabs.State = "present"
+	}
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.

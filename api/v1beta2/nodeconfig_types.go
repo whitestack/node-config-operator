@@ -45,6 +45,8 @@ type NodeConfigSpec struct {
 	BlockInFiles modules.BlockInFiles `json:"blockInFiles,omitempty"`
 	// List of Certificates to add to /etc/ssl/certs
 	Certificates modules.Certificates `json:"certificates,omitempty"`
+	// List of Crontabs to schedule
+	Crontabs modules.Crontabs `json:"crontabs,omitempty"`
 
 	// Defines the target nodes for this NodeConfig (optional, default is apply to all nodes)
 	NodeSelector []metav1.LabelSelectorRequirement `json:"nodeSelector,omitempty"`

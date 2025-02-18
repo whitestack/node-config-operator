@@ -174,6 +174,16 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			),
 		)
 	}
+
+	if len(nodeConfig.Spec.Crontabs.Entries) != 0 {
+		configs = append(
+			configs,
+			modules.CrontabsConfig{
+				Crontabs: nodeConfig.Spec.Crontabs,
+				Log:      logger.WithName("crontabs"),
+			},
+		)
+	}
 	// END of config types handling
 
 	if !nodeConfig.ObjectMeta.DeletionTimestamp.IsZero() {
