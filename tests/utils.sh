@@ -205,3 +205,46 @@ check_crontabs() {
         fi
     done
 }
+
+check_grub_kernel_config() {
+    local node_name=$1
+    local grub_config_file="/etc/default/grub.d/70_kernel_grub_nco.cfg"
+
+    # Extract kernel version, arguments, and manifest state
+    local kernel_version=$(yq ".spec.grubKernelConfig.kernelVersion" $NODECONFIG_FILE)
+    local args=$(yq ".spec.grubKernelConfig.args | join(\" \")" $NODECONFIG_FILE)
+    local state=$(yq ".spec.grubKernelConfig.state" $NODECONFIG_FILE)
+
+    echo "➖  Checking GRUB configuration on $node_name..."
+
+    # Read the content of the specific configuration file in grub.d
+    local grub_config_content=$(run_on_node "$node_name" "cat $grub_config_file")
+
+    if [[ "$state" == "present" ]]; then
+        # Check GRUB_CMDLINE_LINUX if arguments are provided
+        if [[ -n "$args" ]]; then
+            if echo "$grub_config_content" | grep -q "GRUB_CMDLINE_LINUX=\"$args\""; then
+                echo "✅  Success: GRUB_CMDLINE_LINUX is set to '$args'"
+            else
+                echo "❌  Error: GRUB_CMDLINE_LINUX is not set correctly. Current content: '$grub_config_content'"
+            fi
+        fi
+
+        # Check GRUB_DEFAULT if a kernel version is provided
+        if [[ -n "$kernel_version" ]]; then
+            local expected_default="Advanced options for Ubuntu>Ubuntu, with Linux $kernel_version"
+            if echo "$grub_config_content" | grep -q "GRUB_DEFAULT=\"$expected_default\""; then
+                echo "✅  Success: GRUB_DEFAULT is set to '$expected_default'"
+            else
+                echo "❌  Error: GRUB_DEFAULT is not set correctly. Current content: '$grub_config_content'"
+            fi
+        fi
+    elif [[ "$state" == "absent" ]]; then
+        # Check that the configuration file does not exist or is empty
+        if [[ -z "$grub_config_content" ]]; then
+            echo "✅  Success: GRUB configuration file is absent or empty"
+        else
+            echo "❌  Error: GRUB configuration file still contains content: '$grub_config_content'"
+        fi
+    fi
+}

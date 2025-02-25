@@ -97,6 +97,7 @@ func (in *NodeConfigSpec) DeepCopyInto(out *NodeConfigSpec) {
 	in.BlockInFiles.DeepCopyInto(&out.BlockInFiles)
 	in.Certificates.DeepCopyInto(&out.Certificates)
 	in.Crontabs.DeepCopyInto(&out.Crontabs)
+	in.GrubKernelConfig.DeepCopyInto(&out.GrubKernelConfig)
 	if in.NodeSelector != nil {
 		in, out := &in.NodeSelector, &out.NodeSelector
 		*out = make([]v1.LabelSelectorRequirement, len(*in))

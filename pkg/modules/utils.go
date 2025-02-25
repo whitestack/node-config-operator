@@ -258,3 +258,25 @@ func checkIfServiceIsActive(serviceName string) (bool, error) {
 	}
 	return true, nil
 }
+
+// Helper function to check if a slice contains a specific string.
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
+// Helper function to check if a file exists.
+func checkFileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	return false, err
+}

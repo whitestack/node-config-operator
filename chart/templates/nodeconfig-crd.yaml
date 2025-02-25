@@ -361,6 +361,23 @@ spec:
                   state:
                     type: string
                 type: object
+              grubKernelConfig:
+                description: GrubKernelConfig contains kernel version and command line
+                  arguments for GRUB configuration
+                properties:
+                  args:
+                    description: CmdlineArgs stores kernel boot parameters to be added
+                      to GRUB_CMDLINE_LINUX
+                    items:
+                      type: string
+                    type: array
+                  kernelVersion:
+                    description: KernelVersion specifies the Linux kernel version to
+                      be used (e.g. "5.15.0-91-generic")
+                    type: string
+                  state:
+                    type: string
+                type: object
               hosts:
                 description: List of hosts to install to /etc/hosts
                 properties:
