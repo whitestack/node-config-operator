@@ -47,7 +47,8 @@ type NodeConfigSpec struct {
 	Certificates modules.Certificates `json:"certificates,omitempty"`
 	// List of Crontabs to schedule
 	Crontabs modules.Crontabs `json:"crontabs,omitempty"`
-
+	// GrubKernelConfig contains kernel version and command line arguments for GRUB configuration
+	GrubKernelConfig modules.GrubKernel `json:"grubKernelConfig,omitempty"`
 	// Defines the target nodes for this NodeConfig (optional, default is apply to all nodes)
 	NodeSelector []metav1.LabelSelectorRequirement `json:"nodeSelector,omitempty"`
 }
