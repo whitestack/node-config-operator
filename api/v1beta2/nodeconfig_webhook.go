@@ -78,6 +78,10 @@ func (r *NodeConfig) Default() {
 		r.Spec.Crontabs.Entries = []modules.Crontab{}
 		r.Spec.Crontabs.State = "present"
 	}
+	if len(r.Spec.GrubKernelConfig.CmdlineArgs) == 0 && r.Spec.GrubKernelConfig.KernelVersion == "" {
+		r.Spec.GrubKernelConfig = modules.GrubKernel{}
+		r.Spec.GrubKernelConfig.State = "present"
+	}
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.

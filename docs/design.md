@@ -27,6 +27,7 @@ The available modules are:
 1. systemd: adds and starts a new systemd service
 1. systemd-override: adds an override for an existing systemd unit
 1. crontabs: adds crontabs to schedule
+1. grub-kernel-config: contains kernel version and command line arguments for GRUB configuration 
 
 And they're applied in this order.
 
@@ -37,6 +38,7 @@ The modules:
 - systemd
 - systemd-override
 - crontabs
+- grubKernelConfig
 
 Require that the Helm value `managerConfig.hostfsEnabled` is set to true as they
 need to mount the whole host filesystem to the pod so they can run executables

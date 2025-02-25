@@ -315,3 +315,46 @@ spec:
 **minute , hour , dayOfMonth , month , dayOfWeek** : (Optional) Define the schedule explicitly. Defaults to `*` if not specified.
 **job** : The command or script to execute.
 **user** : The user under which the task will run.
+
+## GRUB Kernel Config
+
+The GRUB configuration can be managed by creating or removing files in 
+the `/etc/default/grub.d` directory. This approach enables modular and 
+idempotent management of GRUB settings, such as kernel command-line arguments
+and the default kernel version.
+
+For example, to set specific kernel arguments and select a default kernel
+version, you would create a configuration file like this:
+
+```shell
+# BEGIN MARKER NCO GRUB CONFIG
+GRUB_CMDLINE_LINUX="quiet splash"
+GRUB_DEFAULT="Advanced options for Ubuntu>Ubuntu, with Linux 5.15.0-91-generic"
+# END MARKER NCO GRUB CONFIG
+```
+
+This configuration can be applied using the following Custom Resource (CR):
+
+```yaml
+apiVersion: configuration.whitestack.com/v1beta2
+kind: NodeConfig
+metadata:
+  name: nodeconfig-grub-sample
+spec:
+  grubKernelConfig:
+    kernelVersion: "5.15.0-91-generic"
+    args:
+      - "quiet"
+      - "splash"
+    state: "present"
+```
+
+### Explanation of Fields
+
+- **kernelVersion (Optional):** Specifies the Linux kernel version
+to set as the default (e.g., "5.15.0-91-generic"). If not provided,
+the default kernel will remain unchanged.
+
+- **args (Optional):** A list of kernel command-line arguments to be
+added to GRUB_CMDLINE_LINUX. If not specified, no changes will be made
+to the kernel command-line arguments.
