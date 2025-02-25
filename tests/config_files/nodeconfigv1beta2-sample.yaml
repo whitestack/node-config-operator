@@ -57,3 +57,10 @@ spec:
         job: "/usr/bin/test.sh"
         user: "root"
     state: "present"
+  grubKernelConfig:
+    kernelVersion: "5.19.0-43-generic"
+    args:
+      - "cgroup_enable=memory"
+      - "swapaccount=1"
+      - "net.ipv4.ip_forward=1"
+    state: present
