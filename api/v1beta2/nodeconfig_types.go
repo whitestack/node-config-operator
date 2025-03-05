@@ -1,5 +1,5 @@
 /*
-Copyright 2023.
+Copyright 2025.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
-	"bitbucket.org/whitestack/node-config-operator/pkg/modules"
+	"github.com/whitestack/node-config-operator/internal/modules"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -49,6 +49,7 @@ type NodeConfigSpec struct {
 	Crontabs modules.Crontabs `json:"crontabs,omitempty"`
 	// GrubKernelConfig contains kernel version and command line arguments for GRUB configuration
 	GrubKernelConfig modules.GrubKernel `json:"grubKernelConfig,omitempty"`
+
 	// Defines the target nodes for this NodeConfig (optional, default is apply to all nodes)
 	NodeSelector []metav1.LabelSelectorRequirement `json:"nodeSelector,omitempty"`
 }
@@ -59,9 +60,9 @@ type NodeConfigStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:storageversion
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:storageversion
 
 // NodeConfig is the Schema for the nodeconfigs API
 type NodeConfig struct {
@@ -72,7 +73,7 @@ type NodeConfig struct {
 	Status NodeConfigStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // NodeConfigList contains a list of NodeConfig
 type NodeConfigList struct {

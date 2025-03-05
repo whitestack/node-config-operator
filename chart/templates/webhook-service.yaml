@@ -3,14 +3,11 @@ kind: Service
 metadata:
   name: {{ include "chart.fullname" . }}-webhook-service
   labels:
-    app.kubernetes.io/component: webhook
-    app.kubernetes.io/created-by: node-config-operator
-    app.kubernetes.io/part-of: node-config-operator
   {{- include "chart.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.webhookService.type }}
   selector:
     control-plane: controller-manager
-  {{- include "chart.selectorLabels" . | nindent 4 }}
+    {{- include "chart.selectorLabels" . | nindent 4 }}
   ports:
-	{{- .Values.webhookService.ports | toYaml | nindent 2 }}
+  {{- .Values.webhookService.ports | toYaml | nindent 2 }}

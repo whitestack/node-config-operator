@@ -1,16 +1,19 @@
 diff --git a/chart/templates/daemonset.yaml b/chart/templates/daemonset.yaml
-index 20f9a38..98b89ec 100644
+index 0da49c3..4d7daa4 100644
 --- a/chart/templates/daemonset.yaml
 +++ b/chart/templates/daemonset.yaml
-@@ -54,6 +54,7 @@ spec:
-         securityContext: {{- toYaml .Values.controllerManager.kubeRbacProxy.containerSecurityContext
-           | nindent 10 }}
-       - args: {{- toYaml .Values.controllerManager.manager.args | nindent 8 }}
+@@ -19,7 +19,9 @@ spec:
+         kubectl.kubernetes.io/default-container: manager
+     spec:
+       containers:
+-      - command:
++      - args:
 +        - --health-probe-bind-address=:{{ .Values.controllerManager.manager.healthPort }}
-         command:
++        command:
          - /manager
          env:
-@@ -78,7 +79,7 @@ spec:
+         - name: NODE_NAME
+@@ -43,7 +45,7 @@ spec:
          livenessProbe:
            httpGet:
              path: /healthz
@@ -19,7 +22,7 @@ index 20f9a38..98b89ec 100644
            initialDelaySeconds: 15
            periodSeconds: 20
          name: manager
-@@ -89,7 +90,7 @@ spec:
+@@ -54,7 +56,7 @@ spec:
          readinessProbe:
            httpGet:
              path: /readyz
@@ -29,16 +32,10 @@ index 20f9a38..98b89ec 100644
            periodSeconds: 10
          resources: {{- toYaml .Values.controllerManager.manager.resources | nindent 10
 diff --git a/chart/values.yaml b/chart/values.yaml
-index 33ab266..8d68bc9 100644
+index ec96361..b4aac5c 100644
 --- a/chart/values.yaml
 +++ b/chart/values.yaml
-@@ -22,13 +22,13 @@ controllerManager:
-         memory: 64Mi
-   manager:
-     args:
--    - --health-probe-bind-address=:8081
-     - --metrics-bind-address=127.0.0.1:8080
-     containerSecurityContext:
+@@ -4,7 +4,8 @@ controllerManager:
        privileged: true
      image:
        repository: ghcr.io/whitestack/node-config-operator
