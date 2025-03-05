@@ -25,13 +25,13 @@ This operator configures multiple parts of a Ubuntu server, such as:
 ### Deploy using helm
 
 1. Install the chart with:
-   `helm upgrade --install --create-namespace -n nco-system nco oci://ghcr.io/whitestack/node-config-operator-chart`
+   `helm upgrade --install --create-namespace -n nco-system nco oci://ghcr.io/whitestack/charts/node-config-operator`
 
 1. The operator will start, but no changes will be applied to hosts until a
    valid `NodeConfig` CR is applied.
 
 A sample CR can be found
-[here](/config/samples/configuration_v1_nodeconfig.yaml)
+[here](/config/samples/configuration_v1beta2_nodeconfig.yaml)
 
 ## Reference
 
