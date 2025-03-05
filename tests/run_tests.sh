@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -o pipefail
+
 # Check if the first parameter is set, otherwise default to 3
 NUM_NODES="${1:-3}"
 
@@ -14,7 +17,7 @@ KUBECONFIG=".kube/minikube-config"
 export KUBECONFIG
 
 # Check if the specified test script file exists
-if ![ -e "$NODECONFIG_FILE" ]; then
+if [ ! -e "$NODECONFIG_FILE" ]; then
     echo "❌  Error: The specified node config file does not exist: $NODECONFIG_FILE"
     exit 1
 fi

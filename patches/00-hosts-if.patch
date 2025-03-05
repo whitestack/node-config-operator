@@ -1,16 +1,14 @@
 diff --git a/chart/templates/daemonset.yaml b/chart/templates/daemonset.yaml
-index 8bb7b88..20f9a38 100644
+index 8710693..0da49c3 100644
 --- a/chart/templates/daemonset.yaml
 +++ b/chart/templates/daemonset.yaml
-@@ -103,11 +103,17 @@ spec:
+@@ -75,11 +75,15 @@ spec:
            name: lib-modules
          - mountPath: /etc/host/hosts
            name: hosts
 +        {{- if .Values.managerConfig.hostfsEnabled }}
          - mountPath: /host
            name: host-fs
-+        {{- end }}
-+      {{- if .Values.managerConfig.hostfsEnabled }}
        hostIPC: true
 +      {{- end }}
        hostNetwork: true
@@ -20,7 +18,7 @@ index 8bb7b88..20f9a38 100644
        serviceAccountName: {{ include "chart.fullname" . }}-controller-manager
        terminationGracePeriodSeconds: 10
        tolerations:
-@@ -138,7 +144,9 @@ spec:
+@@ -114,7 +118,9 @@ spec:
            path: /etc/hosts
            type: File
          name: hosts
@@ -33,10 +31,10 @@ index 8bb7b88..20f9a38 100644
 +        name: host-fs
 +      {{- end }}
 diff --git a/chart/values.yaml b/chart/values.yaml
-index f77017d..299b600 100644
+index c47804e..ec96361 100644
 --- a/chart/values.yaml
 +++ b/chart/values.yaml
-@@ -40,8 +40,8 @@ controllerManager:
+@@ -16,8 +16,8 @@ controllerManager:
      annotations: {}
  kubernetesClusterDomain: cluster.local
  managerConfig:

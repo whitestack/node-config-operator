@@ -1,5 +1,5 @@
 /*
-Copyright 2023.
+Copyright 2025.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package controller
 
 import (
 	"context"
@@ -37,10 +37,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	configurationv1beta2 "bitbucket.org/whitestack/node-config-operator/api/v1beta2"
-	"bitbucket.org/whitestack/node-config-operator/pkg/modules"
+	configurationv1beta2 "github.com/whitestack/node-config-operator/api/v1beta2"
+	"github.com/whitestack/node-config-operator/internal/modules"
 )
 
 var nodeName = os.Getenv("NODE_NAME")
@@ -66,7 +65,7 @@ type NodeConfigReconciler struct {
 // the user.
 //
 // For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logging.WithValues("objectName", req.Name, "node", os.Getenv("NODE_NAME"))
 	configs := []modules.Config{}
@@ -256,15 +255,13 @@ func (r *NodeConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: nodeName}}).
 		Watches(
-			&source.Kind{
-				Type: &corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
+			&corev1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: nodeName,
 				},
 			},
 			handler.EnqueueRequestsFromMapFunc(
-				func(a client.Object) []reconcile.Request {
+				func(c context.Context, a client.Object) []reconcile.Request {
 					routes := &configurationv1beta2.NodeConfigList{}
 					if err := r.List(context.Background(), routes); err != nil {
 						logging.Error(err, "Failed to list NodeConfigs")
