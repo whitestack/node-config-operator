@@ -135,7 +135,7 @@ check_certificates() {
     local node_name=$1
 
     echo "❗ Warning: Checking the certificates module is not possible in Minikube"
-
+    return 0
     #for idx in $(yq '.spec.certificates.certificates | keys' $NODECONFIG_FILE | wc -l); do
     #    local filename="/etc/ssl/certs/ca-certificates.crt"
     #    local content=$(yq ".spec.certificates.certificates[$((idx-1))].content" $NODECONFIG_FILE | tr '\n' ',')
@@ -153,7 +153,9 @@ check_certificates() {
 
 check_crontabs() {
     local node_name=$1
-    echo "Checking crontab entries on node: $node_name"
+
+    echo "❗ Warning: Checking the crontabs module is not possible in Minikube"
+    return 0
 
     # Check if the 'crontabs.entries' section exists
     local entry_count=$(yq '.spec.crontabs.entries | length' "$NODECONFIG_FILE")
@@ -209,6 +211,9 @@ check_crontabs() {
 check_grub_kernel_config() {
     local node_name=$1
     local grub_config_file="/etc/default/grub.d/70_kernel_grub_nco.cfg"
+
+    echo "❗ Warning: Checking the GRUB kernel configuration module is not possible in Minikube"
+    return 0
 
     # Extract kernel version, arguments, and manifest state
     local kernel_version=$(yq ".spec.grubKernelConfig.kernelVersion" $NODECONFIG_FILE)
