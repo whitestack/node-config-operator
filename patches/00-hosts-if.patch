@@ -1,8 +1,8 @@
 diff --git a/chart/templates/daemonset.yaml b/chart/templates/daemonset.yaml
-index 8710693..0da49c3 100644
+index e879906..ec90cb7 100644
 --- a/chart/templates/daemonset.yaml
 +++ b/chart/templates/daemonset.yaml
-@@ -75,11 +75,15 @@ spec:
+@@ -80,11 +80,15 @@ spec:
            name: lib-modules
          - mountPath: /etc/host/hosts
            name: hosts
@@ -18,7 +18,7 @@ index 8710693..0da49c3 100644
        serviceAccountName: {{ include "chart.fullname" . }}-controller-manager
        terminationGracePeriodSeconds: 10
        tolerations:
-@@ -114,7 +118,9 @@ spec:
+@@ -119,7 +123,9 @@ spec:
            path: /etc/hosts
            type: File
          name: hosts
@@ -31,7 +31,7 @@ index 8710693..0da49c3 100644
 +        name: host-fs
 +      {{- end }}
 diff --git a/chart/values.yaml b/chart/values.yaml
-index c47804e..ec96361 100644
+index 967294d..b74acdb 100644
 --- a/chart/values.yaml
 +++ b/chart/values.yaml
 @@ -16,8 +16,8 @@ controllerManager:
@@ -42,6 +42,6 @@ index c47804e..ec96361 100644
 -  hostfsEnabled: "false"
 +  aptEnabled: false
 +  hostfsEnabled: false
+   validationModulePresentEnabled: "true"
  metricsService:
    ports:
-   - name: https

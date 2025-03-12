@@ -18,6 +18,14 @@ type AptPackages struct {
 	State string `json:"state,omitempty"`
 }
 
+// IsPresent method checks if the module is present
+func (a AptPackages) IsPresent() bool {
+	if len(a.Packages) != 0 && a.State == "present" {
+		return true
+	}
+	return false
+}
+
 type AptPackage struct {
 	Name    string `json:"name"`
 	Version string `json:"version,omitempty"`

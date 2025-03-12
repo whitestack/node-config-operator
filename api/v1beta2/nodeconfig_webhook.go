@@ -17,103 +17,160 @@ limitations under the License.
 package v1beta2
 
 import (
+	"context"
+	"fmt"
+	"os"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
-	"github.com/whitestack/node-config-operator/internal/modules"
 )
-
-// log is for logging in this package.
-var nodeconfiglog = logf.Log.WithName("nodeconfig-resource")
 
 // SetupWebhookWithManager will setup the manager to manage the webhooks
 func (r *NodeConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	mPresent := os.Getenv("VALIDATION_MODULE_PRESENT_ENABLED")
+	modulePresent := false
+	if mPresent == "true" {
+		modulePresent = true
+	}
+
+	s := validatorSettings{
+		modulePresent: modulePresent,
+	}
+
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(&NodeConfigDefaulter{c: mgr.GetClient()}).
+		WithValidator(&NodeConfigValidator{c: mgr.GetClient(), s: s}).
 		Complete()
 }
 
-// TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-
 // +kubebuilder:webhook:path=/mutate-configuration-whitestack-com-v1beta2-nodeconfig,mutating=true,failurePolicy=fail,sideEffects=None,groups=configuration.whitestack.com,resources=nodeconfigs,verbs=create;update,versions=v1beta2,name=mnodeconfig.kb.io,admissionReviewVersions=v1
+// +kubebuilder:object:generate=false
 
-var _ webhook.Defaulter = &NodeConfig{}
-
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *NodeConfig) Default() {
-	nodeconfiglog.Info("default", "name", r.Name)
-		if len(r.Spec.KernelParameters.Parameters) == 0 {
-		r.Spec.KernelParameters.Parameters = []modules.KernelParameterKV{}
-		r.Spec.KernelParameters.State = "present"
-	}
-	if len(r.Spec.KernelModules.Modules) == 0 {
-		r.Spec.KernelModules.Modules = []string{}
-		r.Spec.KernelModules.State = "present"
-	}
-	if len(r.Spec.SystemdUnits.Units) == 0 {
-		r.Spec.SystemdUnits.Units = []modules.SystemdUnit{}
-		r.Spec.SystemdUnits.State = "present"
-	}
-	if len(r.Spec.SystemdOverrides.Overrides) == 0 {
-		r.Spec.SystemdOverrides.Overrides = []modules.SystemdOverride{}
-		r.Spec.SystemdOverrides.State = "present"
-	}
-	if len(r.Spec.Hosts.Hosts) == 0 {
-		r.Spec.Hosts.Hosts = []modules.Host{}
-		r.Spec.Hosts.State = "present"
-	}
-	if len(r.Spec.AptPackages.Packages) == 0 {
-		r.Spec.AptPackages.Packages = []modules.AptPackage{}
-		r.Spec.AptPackages.State = "present"
-	}
-	if len(r.Spec.BlockInFiles.Blocks) == 0 {
-		r.Spec.BlockInFiles.Blocks = []modules.BlockInFile{}
-		r.Spec.BlockInFiles.State = "present"
-	}
-	if len(r.Spec.Certificates.Certificates) == 0 {
-		r.Spec.Certificates.Certificates = []modules.Certificate{}
-		r.Spec.Certificates.State = "present"
-	}
-	if len(r.Spec.Crontabs.Entries) == 0 {
-		r.Spec.Crontabs.Entries = []modules.Crontab{}
-		r.Spec.Crontabs.State = "present"
-	}
-	if len(r.Spec.GrubKernelConfig.CmdlineArgs) == 0 && r.Spec.GrubKernelConfig.KernelVersion == "" {
-		r.Spec.GrubKernelConfig = modules.GrubKernel{}
-		r.Spec.GrubKernelConfig.State = "present"
-	}
+type NodeConfigDefaulter struct {
+	c client.Client
 }
 
-// TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-// NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
-// Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
-// +kubebuilder:webhook:path=/validate-configuration-whitestack-com-v1beta2-nodeconfig,mutating=false,failurePolicy=fail,sideEffects=None,groups=configuration.whitestack.com,resources=nodeconfigs,verbs=create;update,versions=v1beta2,name=vnodeconfig.kb.io,admissionReviewVersions=v1
+func (nd *NodeConfigDefaulter) Default(ctx context.Context, obj runtime.Object) error {
+	logger := log.FromContext(ctx)
+	nc := obj.(*NodeConfig)
+	logger.Info("default", "name", nc.Name)
 
-var _ webhook.Validator = &NodeConfig{}
+	return nil
+}
+
+type validatorSettings struct {
+	modulePresent bool
+}
+
+// +kubebuilder:webhook:path=/validate-configuration-whitestack-com-v1beta2-nodeconfig,mutating=false,failurePolicy=fail,sideEffects=None,groups=configuration.whitestack.com,resources=nodeconfigs,verbs=create;update,versions=v1beta2,name=vnodeconfig.kb.io,admissionReviewVersions=v1
+// +kubebuilder:object:generate=false
+
+type NodeConfigValidator struct {
+	c client.Client
+	s validatorSettings
+}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *NodeConfig) ValidateCreate() (admission.Warnings, error) {
-	nodeconfiglog.Info("validate create", "name", r.Name)
+func (nv *NodeConfigValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	logger := log.FromContext(ctx)
 
-	// TODO(user): fill in your validation logic upon object creation.
-	return nil, nil
+	nc := obj.(*NodeConfig)
+	logger.Info("validate create", "name", nc.Name)
+
+	return nil, nv.validate(ctx, nc)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *NodeConfig) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	nodeconfiglog.Info("validate update", "name", r.Name)
+func (nv *NodeConfigValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	logger := log.FromContext(ctx)
 
-	// TODO(user): fill in your validation logic upon object update.
-	return nil, nil
+	ncNew := newObj.(*NodeConfig)
+	logger.Info("validate update", "name", ncNew.Name)
+
+	return nil, nv.validate(ctx, ncNew)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *NodeConfig) ValidateDelete() (admission.Warnings, error) {
-	nodeconfiglog.Info("validate delete", "name", r.Name)
-
-	// TODO(user): fill in your validation logic upon object deletion.
+func (nv *NodeConfigValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	return nil, nil
+}
+
+func (nv *NodeConfigValidator) validate(ctx context.Context, nc *NodeConfig) error {
+	if nv.s.modulePresent {
+		err := nv.validateModulePresent(ctx, nc)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// validateModulePresent checks that there isn't another NodeConfig in the
+// cluster that has configured the same modules for the same node selector
+func (nv *NodeConfigValidator) validateModulePresent(ctx context.Context, nc *NodeConfig) error {
+	ncList := &NodeConfigList{}
+	err := nv.c.List(ctx, ncList, &client.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	ncNamespacedName := getNamespacedNameFromObject(nc)
+
+	for _, nodeConfig := range ncList.Items {
+		nodeConfigNamespacedName := getNamespacedNameFromObject(&nodeConfig)
+		if ncNamespacedName == nodeConfigNamespacedName {
+			// same object
+			continue
+		}
+
+		sameNodeSelector, err := compareSelectors(nc.Spec.NodeSelector, nodeConfig.Spec.NodeSelector)
+		if err != nil {
+			return err
+		}
+		if !sameNodeSelector {
+			continue
+		}
+
+		getError := func(moduleName string) error {
+			return fmt.Errorf("%s module already defined in %s", moduleName, nodeConfigNamespacedName)
+		}
+
+		// Validate all modules
+		if nc.Spec.AptPackages.IsPresent() && nodeConfig.Spec.AptPackages.IsPresent() {
+			return getError("apt")
+		}
+		if nc.Spec.BlockInFiles.IsPresent() && nodeConfig.Spec.BlockInFiles.IsPresent() {
+			return getError("blockInFiles")
+		}
+		if nc.Spec.Certificates.IsPresent() && nodeConfig.Spec.Certificates.IsPresent() {
+			return getError("certificates")
+		}
+		if nc.Spec.Crontabs.IsPresent() && nodeConfig.Spec.Crontabs.IsPresent() {
+			return getError("crontabs")
+		}
+		if nc.Spec.GrubKernelConfig.IsPresent() && nodeConfig.Spec.GrubKernelConfig.IsPresent() {
+			return getError("grubKernelConfig")
+		}
+		if nc.Spec.Hosts.IsPresent() && nodeConfig.Spec.Hosts.IsPresent() {
+			return getError("hosts")
+		}
+		if nc.Spec.KernelModules.IsPresent() && nodeConfig.Spec.KernelModules.IsPresent() {
+			return getError("kernelModules")
+		}
+		if nc.Spec.KernelParameters.IsPresent() && nodeConfig.Spec.KernelParameters.IsPresent() {
+			return getError("kernelParameters")
+		}
+		if nc.Spec.SystemdUnits.IsPresent() && nodeConfig.Spec.SystemdUnits.IsPresent() {
+			return getError("systemdUnits")
+		}
+		if nc.Spec.SystemdOverrides.IsPresent() && nodeConfig.Spec.SystemdOverrides.IsPresent() {
+			return getError("systemdOverrides")
+		}
+	}
+	return nil
 }

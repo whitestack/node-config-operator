@@ -1,5 +1,5 @@
 diff --git a/chart/templates/daemonset.yaml b/chart/templates/daemonset.yaml
-index 0da49c3..4d7daa4 100644
+index ec90cb7..32bfd37 100644
 --- a/chart/templates/daemonset.yaml
 +++ b/chart/templates/daemonset.yaml
 @@ -19,7 +19,9 @@ spec:
@@ -13,7 +13,7 @@ index 0da49c3..4d7daa4 100644
          - /manager
          env:
          - name: NODE_NAME
-@@ -43,7 +45,7 @@ spec:
+@@ -48,7 +50,7 @@ spec:
          livenessProbe:
            httpGet:
              path: /healthz
@@ -22,7 +22,7 @@ index 0da49c3..4d7daa4 100644
            initialDelaySeconds: 15
            periodSeconds: 20
          name: manager
-@@ -54,7 +56,7 @@ spec:
+@@ -59,7 +61,7 @@ spec:
          readinessProbe:
            httpGet:
              path: /readyz
@@ -32,7 +32,7 @@ index 0da49c3..4d7daa4 100644
            periodSeconds: 10
          resources: {{- toYaml .Values.controllerManager.manager.resources | nindent 10
 diff --git a/chart/values.yaml b/chart/values.yaml
-index ec96361..b4aac5c 100644
+index b74acdb..1c3178a 100644
 --- a/chart/values.yaml
 +++ b/chart/values.yaml
 @@ -4,7 +4,8 @@ controllerManager:

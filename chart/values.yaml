@@ -19,6 +19,7 @@ kubernetesClusterDomain: cluster.local
 managerConfig:
   aptEnabled: false
   hostfsEnabled: false
+  validationModulePresentEnabled: "true"
 metricsService:
   ports:
   - name: https

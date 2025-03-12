@@ -19,6 +19,14 @@ type Crontabs struct {
 	State string `json:"state,omitempty"`
 }
 
+// IsPresent method checks if the module is present
+func (c Crontabs) IsPresent() bool {
+	if len(c.Entries) != 0 && c.State == "present" {
+		return true
+	}
+	return false
+}
+
 // Crontab defines an individual crontab entry.
 type Crontab struct {
 	// Unique identifier for the cron job

@@ -22,6 +22,14 @@ type SystemdOverrides struct {
 	State string `json:"state,omitempty"`
 }
 
+// IsPresent method checks if the module is present
+func (s SystemdOverrides) IsPresent() bool {
+	if len(s.Overrides) != 0 && s.State == "present" {
+		return true
+	}
+	return false
+}
+
 type SystemdOverride struct {
 	// Name of unit to override, must have service or slice suffix
 	Name string `json:"name"`

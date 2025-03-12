@@ -7,3 +7,5 @@ metadata:
 data:
   APT_ENABLED: {{ .Values.managerConfig.aptEnabled | quote }}
   HOSTFS_ENABLED: {{ .Values.managerConfig.hostfsEnabled | quote }}
+  VALIDATION_MODULE_PRESENT_ENABLED: {{ .Values.managerConfig.validationModulePresentEnabled
+    | quote }}

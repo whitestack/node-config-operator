@@ -107,6 +107,8 @@ _Appears in:_
 | `spec` _[NodeConfigSpec](#nodeconfigspec)_ |  |  |  |
 
 
+
+
 #### NodeConfigList
 
 
@@ -149,6 +151,8 @@ _Appears in:_
 | `crontabs` _[Crontabs](#crontabs)_ | List of Crontabs to schedule |  |  |
 | `grubKernelConfig` _[GrubKernel](#grubkernel)_ | GrubKernelConfig contains kernel version and command line arguments for GRUB configuration |  |  |
 | `nodeSelector` _[LabelSelectorRequirement](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#labelselectorrequirement-v1-meta) array_ | Defines the target nodes for this NodeConfig (optional, default is apply to all nodes) |  |  |
+
+
 
 
 
