@@ -57,6 +57,11 @@ spec:
             configMapKeyRef:
               name: manager-config
               key: APT_ENABLED
+        - name: VALIDATION_MODULE_PRESENT_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: manager-config
+              key: VALIDATION_MODULE_PRESENT_ENABLED
         securityContext:
           privileged: true
         livenessProbe:

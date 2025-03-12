@@ -15,6 +15,14 @@ type BlockInFiles struct {
 	State string `json:"state,omitempty"`
 }
 
+// IsPresent method checks if the module is present
+func (b BlockInFiles) IsPresent() bool {
+	if len(b.Blocks) != 0 && b.State == "present" {
+		return true
+	}
+	return false
+}
+
 type BlockInFile struct {
 	FileName string `json:"filename"`
 	Content  string `json:"content"`

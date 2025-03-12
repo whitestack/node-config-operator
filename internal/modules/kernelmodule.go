@@ -18,6 +18,14 @@ type KernelModules struct {
 	State string `json:"state,omitempty"`
 }
 
+// IsPresent method checks if the module is present
+func (k KernelModules) IsPresent() bool {
+	if len(k.Modules) != 0 && k.State == "present" {
+		return true
+	}
+	return false
+}
+
 type KernelModule = string
 
 type KernelModuleConfig struct {

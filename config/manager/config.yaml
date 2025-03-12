@@ -6,3 +6,4 @@ metadata:
 data:
   HOSTFS_ENABLED: "false"
   APT_ENABLED: "false"
+  VALIDATION_MODULE_PRESENT_ENABLED: "true"

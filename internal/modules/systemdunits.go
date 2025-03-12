@@ -18,6 +18,14 @@ type SystemdUnits struct {
 	State string `json:"state,omitempty"`
 }
 
+// IsPresent method checks if the module is present
+func (s SystemdUnits) IsPresent() bool {
+	if len(s.Units) != 0 && s.State == "present" {
+		return true
+	}
+	return false
+}
+
 type SystemdUnit struct {
 	// Name of the service. A "nco" prefix will be appended
 	Name string `json:"name"`

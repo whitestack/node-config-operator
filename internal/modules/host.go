@@ -14,6 +14,14 @@ type Hosts struct {
 	State string `json:"state,omitempty"`
 }
 
+// IsPresent method checks if the module is present
+func (h Hosts) IsPresent() bool {
+	if len(h.Hosts) != 0 && h.State == "present" {
+		return true
+	}
+	return false
+}
+
 type Host struct {
 	Hostname string `json:"hostname"`
 	IP       string `json:"ip"`

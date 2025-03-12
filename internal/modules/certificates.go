@@ -21,6 +21,14 @@ type Certificates struct {
 	State string `json:"state,omitempty"`
 }
 
+// IsPresent method checks if the module is present
+func (c Certificates) IsPresent() bool {
+	if len(c.Certificates) != 0 && c.State == "present" {
+		return true
+	}
+	return false
+}
+
 type Certificate struct {
 	FileName string `json:"filename"`
 	Content  string `json:"content"`

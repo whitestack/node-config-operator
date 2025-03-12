@@ -28,6 +28,14 @@ type GrubKernel struct {
 	State string `json:"state,omitempty"`
 }
 
+// IsPresent method checks if the module is present
+func (g GrubKernel) IsPresent() bool {
+	if g.KernelVersion != "" && len(g.CmdlineArgs) != 0 && g.State == "present" {
+		return true
+	}
+	return false
+}
+
 type GrubKernelConfig struct {
 	GrubKernel
 	Log logr.Logger

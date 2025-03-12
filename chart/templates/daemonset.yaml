@@ -38,6 +38,11 @@ spec:
             configMapKeyRef:
               key: APT_ENABLED
               name: {{ include "chart.fullname" . }}-manager-config
+        - name: VALIDATION_MODULE_PRESENT_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              key: VALIDATION_MODULE_PRESENT_ENABLED
+              name: {{ include "chart.fullname" . }}-manager-config
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
         image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag

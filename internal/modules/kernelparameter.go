@@ -18,6 +18,14 @@ type KernelParameters struct {
 	State string `json:"state,omitempty"`
 }
 
+// IsPresent method checks if the module is present
+func (k KernelParameters) IsPresent() bool {
+	if len(k.Parameters) != 0 && k.State == "present" {
+		return true
+	}
+	return false
+}
+
 type KernelParameterKV struct {
 	// Name of the kernel parameter (e.g. fs.file-max)
 	Name string `json:"name,omitempty"`
