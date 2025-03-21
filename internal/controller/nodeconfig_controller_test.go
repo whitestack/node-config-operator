@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,17 +29,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	configurationv1beta2 "github.com/whitestack/node-config-operator/api/v1beta2"
+	"github.com/whitestack/node-config-operator/internal/modules"
 )
 
 var _ = Describe("NodeConfig Controller", func() {
-	Context("When reconciling a resource", func() {
+	Context("When reconciling an empty resource", func() {
 		const resourceName = "test-resource"
+		const nodeName = "testNode"
 
 		ctx := context.Background()
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Namespace: "default",
 		}
 		nodeconfig := &configurationv1beta2.NodeConfig{}
 
@@ -51,14 +54,12 @@ var _ = Describe("NodeConfig Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
 			resource := &configurationv1beta2.NodeConfig{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
@@ -66,19 +67,100 @@ var _ = Describe("NodeConfig Controller", func() {
 			By("Cleanup the specific resource instance NodeConfig")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
+
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
 			controllerReconciler := &NodeConfigReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
+				Client:   k8sClient,
+				Scheme:   k8sClient.Scheme(),
+				NodeName: nodeName,
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
+
+			By("Checking that the correct status is set")
+			resource := &configurationv1beta2.NodeConfig{}
+			err = k8sClient.Get(ctx, typeNamespacedName, resource)
+			Expect(err).NotTo(HaveOccurred())
+
+			nodeStatus, ok := resource.Status.Nodes[nodeName]
+			Expect(ok).NotTo(BeFalse())
+			Expect(nodeStatus.Status).To(Equal(configurationv1beta2.NodeStatusAvailable))
+		})
+	})
+
+	Context("When reconciling a failing resource", func() {
+		const resourceName = "test-resource-2"
+		const nodeName = "testNode"
+
+		ctx := context.Background()
+
+		typeNamespacedName := types.NamespacedName{
+			Name:      resourceName,
+			Namespace: "default",
+		}
+		nodeconfig := &configurationv1beta2.NodeConfig{}
+
+		BeforeEach(func() {
+			By("setting the correct HOSTFS_ENABLED to true")
+			Expect(os.Setenv("HOSTFS_ENABLED", "true")).To(Succeed())
+			By("creating the custom resource for the Kind NodeConfig")
+			err := k8sClient.Get(ctx, typeNamespacedName, nodeconfig)
+			if err != nil && errors.IsNotFound(err) {
+				resource := &configurationv1beta2.NodeConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      resourceName,
+						Namespace: "default",
+					},
+					Spec: configurationv1beta2.NodeConfigSpec{
+						BlockInFiles: modules.BlockInFiles{
+							Blocks: []modules.BlockInFile{
+								{
+									FileName: "/boot/test",
+									Content:  "test",
+								},
+							},
+							State: "present",
+						},
+					},
+				}
+				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+			}
+		})
+
+		AfterEach(func() {
+			resource := &configurationv1beta2.NodeConfig{}
+			err := k8sClient.Get(ctx, typeNamespacedName, resource)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Cleanup the specific resource instance NodeConfig")
+			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+		})
+
+		It("should successfully reconcile the resource", func() {
+			By("Reconciling the created resource")
+			controllerReconciler := &NodeConfigReconciler{
+				Client:   k8sClient,
+				Scheme:   k8sClient.Scheme(),
+				NodeName: nodeName,
+			}
+
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: typeNamespacedName,
+			})
+			Expect(err).To(HaveOccurred())
+
+			By("Checking that the error status is set")
+			resource := &configurationv1beta2.NodeConfig{}
+			err = k8sClient.Get(ctx, typeNamespacedName, resource)
+			Expect(err).NotTo(HaveOccurred())
+
+			nodeStatus, ok := resource.Status.Nodes[nodeName]
+			Expect(ok).To(BeTrue())
+			Expect(nodeStatus.Status).To(Equal(configurationv1beta2.NodeStatusError))
 		})
 	})
 })

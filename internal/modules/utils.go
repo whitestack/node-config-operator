@@ -18,6 +18,15 @@ type Config interface {
 	Reconcile() error
 }
 
+type ModuleError struct {
+	moduleName string
+	error      error
+}
+
+func (m ModuleError) Error() string {
+	return fmt.Sprintf("module %s error: %s", m.moduleName, m.error)
+}
+
 func writeFile(filePath string, content string) error {
 	dir := filepath.Dir(filePath)
 	err := os.MkdirAll(dir, 0755)

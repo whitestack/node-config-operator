@@ -157,9 +157,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	nodeName := os.Getenv("NODE_NAME")
+	if nodeName == "" {
+		setupLog.Error(err, "NODE_NAME env not set")
+		os.Exit(1)
+	}
+
 	if err = (&controller.NodeConfigReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		NodeName: nodeName,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "NodeConfig")
 		os.Exit(1)

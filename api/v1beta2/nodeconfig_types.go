@@ -21,17 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type NodeStatusType string
-
-const (
-	NodeStatusInProgress NodeStatusType = "InProgress"
-	NodeStatusAvailable  NodeStatusType = "Available"
-	NodeStatusError      NodeStatusType = "Error"
-)
-
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // NodeConfigSpec defines the desired state of NodeConfig
 type NodeConfigSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -62,6 +51,14 @@ type NodeConfigSpec struct {
 	NodeSelector []metav1.LabelSelectorRequirement `json:"nodeSelector,omitempty"`
 }
 
+type NodeStatusType string
+
+const (
+	NodeStatusInProgress NodeStatusType = "InProgress"
+	NodeStatusAvailable  NodeStatusType = "Available"
+	NodeStatusError      NodeStatusType = "Error"
+)
+
 type NodeStatus struct {
 	Status NodeStatusType `json:"status,omitempty"`
 	Error  string         `json:"error,omitempty"`
@@ -69,11 +66,9 @@ type NodeStatus struct {
 
 // NodeConfigStatus defines the observed state of NodeConfig
 type NodeConfigStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
 	// Nodes is the list of the status of all the nodes
-	Nodes map[string]NodeStatus `json:"nodes"`
+	Nodes      map[string]NodeStatus `json:"nodes,omitempty"`
+	Conditions []metav1.Condition    `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
