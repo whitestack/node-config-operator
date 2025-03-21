@@ -27,7 +27,9 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ktypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,9 +44,11 @@ import (
 	"github.com/whitestack/node-config-operator/internal/modules"
 )
 
-var nodeName = os.Getenv("NODE_NAME")
-var nodeConfigFinalizer = fmt.Sprintf("nodeconfig.whitestack.com/finalizer-%s", nodeName)
-var logging = log.Log.WithName("nodeconfig_controller")
+var (
+	nodeName            = os.Getenv("NODE_NAME")
+	nodeConfigFinalizer = fmt.Sprintf("nodeconfig.whitestack.com/finalizer-%s", nodeName)
+	logging             = log.Log.WithName("nodeconfig_controller")
+)
 
 // NodeConfigReconciler reconciles a NodeConfig object
 type NodeConfigReconciler struct {
@@ -67,7 +71,7 @@ type NodeConfigReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := logging.WithValues("objectName", req.Name, "node", os.Getenv("NODE_NAME"))
+	logger := logging.WithValues("objectName", req.Name, "node", nodeName)
 	configs := []modules.Config{}
 
 	nodeConfig := &configurationv1beta2.NodeConfig{}
@@ -93,6 +97,8 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			return ctrl.Result{}, nil
 		}
 	}
+
+	_ = r.setNodeStatus(ctx, req.NamespacedName, configurationv1beta2.NodeStatusInProgress, "")
 
 	// START of config types handling
 	if len(nodeConfig.Spec.AptPackages.Packages) != 0 {
@@ -220,9 +226,9 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	logger.Info("reconciling node")
 	for _, config := range configs {
 		if err := config.Reconcile(); err != nil {
-			return ctrl.Result{}, err
+			_ = r.setNodeStatus(ctx, req.NamespacedName, configurationv1beta2.NodeStatusError, err.Error())
+			return ctrl.Result{RequeueAfter: 2 * time.Minute}, err
 		}
-		// TODO: add status and (optionally) create an event
 	}
 
 	// Add our finalizer to the object
@@ -237,6 +243,11 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if err := r.Update(ctx, nodeConfig); err != nil {
 			return ctrl.Result{}, err
 		}
+	}
+
+	err = r.setNodeStatus(ctx, req.NamespacedName, configurationv1beta2.NodeStatusAvailable, "")
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
 	logger.Info("node reconciled")
@@ -305,6 +316,39 @@ func (r *NodeConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 
 	return err
+}
+
+func (r *NodeConfigReconciler) setNodeStatus(
+	ctx context.Context,
+	nodeConfigKey types.NamespacedName,
+	status configurationv1beta2.NodeStatusType,
+	statusErr string,
+) error {
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		nodeConfig := &configurationv1beta2.NodeConfig{}
+		err := r.Client.Get(ctx, nodeConfigKey, nodeConfig)
+		if err != nil {
+			return fmt.Errorf("failed to get nodeConfig: %w", err)
+		}
+
+		nodeStatus, ok := nodeConfig.Status.Nodes[nodeName]
+		if !ok {
+			nodeStatus = configurationv1beta2.NodeStatus{
+				Status: status,
+				Error:  "",
+			}
+		} else {
+			nodeStatus.Status = status
+			nodeStatus.Error = statusErr
+		}
+
+		nodeConfig.Status.Nodes[nodeName] = nodeStatus
+		err = r.Status().Update(ctx, nodeConfig)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 // checkNodeBySelector returns true if the current node matches the

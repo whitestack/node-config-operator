@@ -157,3 +157,21 @@ _Appears in:_
 
 
 
+#### NodeStatus
+
+
+
+
+
+
+
+_Appears in:_
+- [NodeConfigStatus](#nodeconfigstatus)
+
+| Field | Description | Default | Validation |
+| --- | --- | --- | --- |
+| `error` _string_ |  |  |  |
+
+
+
+
