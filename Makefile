@@ -118,7 +118,7 @@ NUM_NODES ?= 3
 NODECONFIG_FILE ?= ""
 .PHONY: e2e-tests
 e2e-tests: IMG=node-config-operator:test
-e2e-tests: docker-build ## Run e2e tests in minikube
+e2e-tests: dev docker-build ## Run e2e tests in minikube
 	cd tests && ./run_tests.sh $(NUM_NODES) $(NODECONFIG_FILE);
 
 .PHONY: lint

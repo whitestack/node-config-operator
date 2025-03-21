@@ -51,16 +51,19 @@ func (a AptModuleConfig) Reconcile() error {
 		return nil
 	}
 
+	moduleError := ModuleError{"aptPackages", nil}
 	if a.State == "present" {
 		a.Logger.V(1).Info("applying module")
 		if err := a.applyModule(); err != nil {
-			return fmt.Errorf("failed to apply module: %w", err)
+			moduleError.error = err
+			return moduleError
 		}
 		a.Logger.V(1).Info("module applied")
 	} else if a.State == "absent" {
 		a.Logger.V(1).Info("removing module")
 		if err := a.removeModule(); err != nil {
-			return fmt.Errorf("failed to remove module: %w", err)
+			moduleError.error = err
+			return moduleError
 		}
 		a.Logger.V(1).Info("module removed")
 	}

@@ -512,6 +512,34 @@ spec:
             type: object
           status:
             description: NodeConfigStatus defines the observed state of NodeConfig
+            properties:
+              conditions:
+                items:
+                  properties:
+                    reason:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              nodes:
+                additionalProperties:
+                  properties:
+                    error:
+                      type: string
+                    lastGeneration:
+                      format: int64
+                      type: integer
+                    status:
+                      type: string
+                  type: object
+                description: Nodes is the list of the status of all the nodes
+                type: object
             type: object
         type: object
     served: true

@@ -85,16 +85,19 @@ func (s SystemdOverrideConfig) Reconcile() error {
 		return nil
 	}
 
+	moduleError := ModuleError{"systemdOverrides", nil}
 	if s.state == "present" {
 		s.logger.V(1).Info("applying module")
 		if err := s.applyModule(); err != nil {
-			return fmt.Errorf("failed to apply module: %w", err)
+			moduleError.error = err
+			return moduleError
 		}
 		s.logger.V(1).Info("module applied")
 	} else if s.state == "absent" {
 		s.logger.V(1).Info("removing module")
 		if err := s.removeModule(); err != nil {
-			return fmt.Errorf("failed to remove module: %w", err)
+			moduleError.error = err
+			return moduleError
 		}
 		s.logger.V(1).Info("module removed")
 	}

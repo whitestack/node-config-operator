@@ -19,7 +19,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -27,7 +26,9 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ktypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,20 +43,21 @@ import (
 	"github.com/whitestack/node-config-operator/internal/modules"
 )
 
-var nodeName = os.Getenv("NODE_NAME")
-var nodeConfigFinalizer = fmt.Sprintf("nodeconfig.whitestack.com/finalizer-%s", nodeName)
 var logging = log.Log.WithName("nodeconfig_controller")
+
+const requeueAfterTime = 5 * time.Minute
 
 // NodeConfigReconciler reconciles a NodeConfig object
 type NodeConfigReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	NodeName string
 }
 
-//+kubebuilder:rbac:groups=configuration.whitestack.com,resources=nodeconfigs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=configuration.whitestack.com,resources=nodeconfigs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=configuration.whitestack.com,resources=nodeconfigs/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=nodes,verbs=list;watch
+// +kubebuilder:rbac:groups=configuration.whitestack.com,resources=nodeconfigs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=configuration.whitestack.com,resources=nodeconfigs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=configuration.whitestack.com,resources=nodeconfigs/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=nodes,verbs=list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -67,8 +69,9 @@ type NodeConfigReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := logging.WithValues("objectName", req.Name, "node", os.Getenv("NODE_NAME"))
-	configs := []modules.Config{}
+	nodeConfigFinalizer := fmt.Sprintf("nodeconfig.whitestack.com/finalizer-%s", r.NodeName)
+
+	logger := log.FromContext(ctx, "node", r.NodeName)
 
 	nodeConfig := &configurationv1beta2.NodeConfig{}
 	err := r.Get(ctx, req.NamespacedName, nodeConfig)
@@ -82,7 +85,7 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// Check if selector matches
 	if len(nodeConfig.Spec.NodeSelector) > 0 {
 		logger.Info("node selector found", "selector", nodeConfig.Spec.NodeSelector)
-		matches, err := checkNodeBySelector(r.Client, nodeConfig, logger)
+		matches, err := r.checkNodeBySelector(nodeConfig, logger)
 		if err != nil {
 			logger.Error(err, "error while checking if node matches")
 			return ctrl.Result{}, err
@@ -94,6 +97,12 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	}
 
+	nodeStatus, ok := nodeConfig.Status.Nodes[r.NodeName]
+	if !ok || nodeStatus.LastGeneration != nodeConfig.Generation {
+		_ = r.setStatus(ctx, req.NamespacedName, configurationv1beta2.NodeStatusInProgress, "")
+	}
+
+	configs := []modules.Config{}
 	// START of config types handling
 	if len(nodeConfig.Spec.AptPackages.Packages) != 0 {
 		configs = append(
@@ -197,8 +206,6 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if !nodeConfig.ObjectMeta.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(nodeConfig, nodeConfigFinalizer) {
-			// TODO: our finalizer is present, so lets handle any external dependency
-
 			// update object before deleting finalizer to avoid the error
 			// "the object has been modified..."
 			if err := r.Get(ctx, req.NamespacedName, nodeConfig); err != nil {
@@ -220,12 +227,14 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	logger.Info("reconciling node")
 	for _, config := range configs {
 		if err := config.Reconcile(); err != nil {
-			return ctrl.Result{}, err
+			_ = r.setStatus(ctx, req.NamespacedName, configurationv1beta2.NodeStatusError, err.Error())
+			return ctrl.Result{RequeueAfter: requeueAfterTime}, err
 		}
-		// TODO: add status and (optionally) create an event
 	}
 
 	// Add our finalizer to the object
+	// TODO: Change finalizer logic, we only need 1 finalizer instead of one
+	// for each node
 	if !controllerutil.ContainsFinalizer(nodeConfig, nodeConfigFinalizer) {
 		// update object before adding finalizer to avoid the error
 		// "the object has been modified..."
@@ -239,8 +248,13 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		}
 	}
 
+	err = r.setStatus(ctx, req.NamespacedName, configurationv1beta2.NodeStatusAvailable, "")
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	logger.Info("node reconciled")
-	return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
+	return ctrl.Result{RequeueAfter: requeueAfterTime}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -253,11 +267,11 @@ func (r *NodeConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	err = ctrl.NewControllerManagedBy(mgr).
-		For(&corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: nodeName}}).
+		For(&corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: r.NodeName}}).
 		Watches(
 			&corev1.Node{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: nodeName,
+					Name: r.NodeName,
 				},
 			},
 			handler.EnqueueRequestsFromMapFunc(
@@ -307,17 +321,125 @@ func (r *NodeConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return err
 }
 
+func (r *NodeConfigReconciler) setStatus(
+	ctx context.Context,
+	nodeConfigKey types.NamespacedName,
+	status configurationv1beta2.NodeStatusType,
+	statusErr string,
+) error {
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		nodeConfig := &configurationv1beta2.NodeConfig{}
+		err := r.Get(ctx, nodeConfigKey, nodeConfig)
+		if err != nil {
+			return fmt.Errorf("failed to get nodeConfig: %w", err)
+		}
+
+		r.setNodeStatus(nodeConfig, status, statusErr)
+
+		if err := r.setNodeConfigCondition(nodeConfig); err != nil {
+			return fmt.Errorf("failed to set nodeConfig condition: %w", err)
+		}
+
+		err = r.Status().Update(ctx, nodeConfig)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func (r *NodeConfigReconciler) setNodeStatus(
+	nodeConfig *configurationv1beta2.NodeConfig,
+	status configurationv1beta2.NodeStatusType,
+	statusErr string,
+) {
+	if nodeConfig.Status.Nodes == nil {
+		nodeConfig.Status.Nodes = make(map[string]configurationv1beta2.NodeStatus)
+	}
+
+	lastGeneration := nodeConfig.Generation
+	nodeStatus, ok := nodeConfig.Status.Nodes[r.NodeName]
+	if !ok {
+		nodeStatus = configurationv1beta2.NodeStatus{
+			Status:         status,
+			Error:          statusErr,
+			LastGeneration: lastGeneration,
+		}
+	} else {
+		nodeStatus.Status = status
+		nodeStatus.Error = statusErr
+		nodeStatus.LastGeneration = lastGeneration
+	}
+
+	nodeConfig.Status.Nodes[r.NodeName] = nodeStatus
+}
+
+func (r *NodeConfigReconciler) setNodeConfigCondition(nodeConfig *configurationv1beta2.NodeConfig) error {
+	errorCount := 0
+	inProgressCount := 0
+	availableCount := 0
+	total, err := r.getNodesMatchSelector(nodeConfig)
+	if err != nil {
+		return fmt.Errorf("failed to get nodes matching selector: %w", err)
+	}
+
+	for _, status := range nodeConfig.Status.Nodes {
+		switch status.Status {
+		case configurationv1beta2.NodeStatusAvailable:
+			availableCount += 1
+		case configurationv1beta2.NodeStatusInProgress:
+			inProgressCount += 1
+		case configurationv1beta2.NodeStatusError:
+			errorCount += 1
+		}
+	}
+
+	if errorCount > 0 {
+		reason := fmt.Sprintf("%d/%d nodes in error", errorCount, total)
+		nodeConfig.Status.Conditions.SetError(reason)
+	} else if availableCount != total {
+		reason := fmt.Sprintf("%d/%d nodes in progress", inProgressCount, total)
+		nodeConfig.Status.Conditions.SetInProgress(reason)
+	} else {
+		reason := "all nodes configured"
+		nodeConfig.Status.Conditions.SetAvailable(reason)
+	}
+
+	return nil
+}
+
+func (r *NodeConfigReconciler) getNodesMatchSelector(nodeConfig *configurationv1beta2.NodeConfig) (int, error) {
+	nodes := &corev1.NodeList{}
+	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
+		MatchExpressions: nodeConfig.Spec.NodeSelector,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	ctx := context.Background()
+	err = r.List(ctx, nodes, &client.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return 0, err
+	}
+
+	return len(nodes.Items), nil
+}
+
 // checkNodeBySelector returns true if the current node matches the
 // nodeSelector in the nodeConfig object, returning an error if any
 // function call fails
-func checkNodeBySelector(c client.Client, nodeConfig *configurationv1beta2.NodeConfig, logger logr.Logger) (bool, error) {
+func (r *NodeConfigReconciler) checkNodeBySelector(
+	nodeConfig *configurationv1beta2.NodeConfig,
+	logger logr.Logger,
+) (bool, error) {
 	nodes := &corev1.NodeList{}
 	selector, err := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{
 		MatchExpressions: append(nodeConfig.Spec.NodeSelector,
 			metav1.LabelSelectorRequirement{
 				Key:      "kubernetes.io/hostname",
 				Operator: metav1.LabelSelectorOpIn,
-				Values:   []string{nodeName},
+				Values:   []string{r.NodeName},
 			}),
 	})
 	if err != nil {
@@ -325,7 +447,7 @@ func checkNodeBySelector(c client.Client, nodeConfig *configurationv1beta2.NodeC
 	}
 
 	listOptions := &client.ListOptions{LabelSelector: selector}
-	if err := c.List(context.Background(), nodes, listOptions); err != nil {
+	if err := r.List(context.Background(), nodes, listOptions); err != nil {
 		logger.Error(err, "Failed to fetch nodes")
 		return false, err
 	} else if len(nodes.Items) == 0 {

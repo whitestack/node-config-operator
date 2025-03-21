@@ -21,9 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // NodeConfigSpec defines the desired state of NodeConfig
 type NodeConfigSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -54,10 +51,136 @@ type NodeConfigSpec struct {
 	NodeSelector []metav1.LabelSelectorRequirement `json:"nodeSelector,omitempty"`
 }
 
+type NodeStatusType string
+
+const (
+	NodeStatusInProgress NodeStatusType = "InProgress"
+	NodeStatusAvailable  NodeStatusType = "Available"
+	NodeStatusError      NodeStatusType = "Error"
+)
+
+type NodeStatus struct {
+	LastGeneration int64          `json:"lastGeneration,omitempty"`
+	Status         NodeStatusType `json:"status,omitempty"`
+	Error          string         `json:"error,omitempty"`
+}
+
+type ConditionType string
+
+const (
+	NodeConditionInProgress ConditionType = "InProgress"
+	NodeConditionAvailable  ConditionType = "Available"
+	NodeConditionError      ConditionType = "Error"
+)
+
+type Condition struct {
+	Type   ConditionType          `json:"type"`
+	Status metav1.ConditionStatus `json:"status"`
+	Reason string                 `json:"reason,omitempty"`
+}
+
+func NewCondition(conditionType ConditionType, status metav1.ConditionStatus, reason string) Condition {
+	condition := Condition{
+		Type:   conditionType,
+		Status: status,
+		Reason: reason,
+	}
+	return condition
+}
+
+type ConditionList []Condition
+
+func (c *ConditionList) Set(conditionType ConditionType, status metav1.ConditionStatus, reason string) {
+	condition := c.Find(conditionType)
+
+	// If there isn't condition we want to change, add new one
+	if condition == nil {
+		condition := NewCondition(conditionType, status, reason)
+		*c = append(*c, condition)
+		return
+	}
+
+	// If there is different status, reason or message update it
+	if condition.Status != status || condition.Reason != reason {
+		condition.Status = status
+		condition.Reason = reason
+	}
+}
+
+func (c ConditionList) Find(conditionType ConditionType) *Condition {
+	for i := range c {
+		if c[i].Type == conditionType {
+			return &c[i]
+		}
+	}
+	return nil
+}
+
+func (c *ConditionList) SetInProgress(reason string) {
+	c.Set(
+		NodeConditionInProgress,
+		metav1.ConditionTrue,
+		reason,
+	)
+
+	c.Set(
+		NodeConditionAvailable,
+		metav1.ConditionFalse,
+		"",
+	)
+
+	c.Set(
+		NodeConditionError,
+		metav1.ConditionFalse,
+		"",
+	)
+}
+
+func (c *ConditionList) SetAvailable(reason string) {
+	c.Set(
+		NodeConditionInProgress,
+		metav1.ConditionFalse,
+		"",
+	)
+
+	c.Set(
+		NodeConditionAvailable,
+		metav1.ConditionTrue,
+		reason,
+	)
+
+	c.Set(
+		NodeConditionError,
+		metav1.ConditionFalse,
+		"",
+	)
+}
+
+func (c *ConditionList) SetError(reason string) {
+	c.Set(
+		NodeConditionInProgress,
+		metav1.ConditionFalse,
+		"",
+	)
+
+	c.Set(
+		NodeConditionAvailable,
+		metav1.ConditionFalse,
+		"",
+	)
+
+	c.Set(
+		NodeConditionError,
+		metav1.ConditionTrue,
+		reason,
+	)
+}
+
 // NodeConfigStatus defines the observed state of NodeConfig
 type NodeConfigStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Nodes is the list of the status of all the nodes
+	Nodes      map[string]NodeStatus `json:"nodes,omitempty"`
+	Conditions ConditionList         `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true

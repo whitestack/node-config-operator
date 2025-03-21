@@ -88,6 +88,58 @@ Package v1beta2 contains API Schema definitions for the configuration v1beta2 AP
 
 
 
+#### Condition
+
+
+
+
+
+
+
+_Appears in:_
+- [ConditionList](#conditionlist)
+
+| Field | Description | Default | Validation |
+| --- | --- | --- | --- |
+| `type` _[ConditionType](#conditiontype)_ |  |  |  |
+| `reason` _string_ |  |  |  |
+
+
+#### ConditionList
+
+_Underlying type:_ _[Condition](#condition)_
+
+
+
+
+
+_Appears in:_
+- [NodeConfigStatus](#nodeconfigstatus)
+
+| Field | Description | Default | Validation |
+| --- | --- | --- | --- |
+| `type` _[ConditionType](#conditiontype)_ |  |  |  |
+| `reason` _string_ |  |  |  |
+
+
+#### ConditionType
+
+_Underlying type:_ _string_
+
+
+
+
+
+_Appears in:_
+- [Condition](#condition)
+
+| Field | Description |
+| --- | --- |
+| `InProgress` |  |
+| `Available` |  |
+| `Error` |  |
+
+
 #### NodeConfig
 
 
@@ -153,6 +205,25 @@ _Appears in:_
 | `nodeSelector` _[LabelSelectorRequirement](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#labelselectorrequirement-v1-meta) array_ | Defines the target nodes for this NodeConfig (optional, default is apply to all nodes) |  |  |
 
 
+
+
+
+
+#### NodeStatus
+
+
+
+
+
+
+
+_Appears in:_
+- [NodeConfigStatus](#nodeconfigstatus)
+
+| Field | Description | Default | Validation |
+| --- | --- | --- | --- |
+| `lastGeneration` _integer_ |  |  |  |
+| `error` _string_ |  |  |  |
 
 
 
