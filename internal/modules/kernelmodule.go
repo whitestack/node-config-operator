@@ -1,10 +1,7 @@
 package modules
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
-	"os"
 	"os/exec"
 	"strings"
 
@@ -16,6 +13,12 @@ type KernelModules struct {
 	Modules []string `json:"modules,omitempty"`
 	// +kubebuilder:Enum="present";"absent"
 	State string `json:"state,omitempty"`
+	// Priority to set for these modules (default: 50)
+	// +kubebuilder:validation:Maximum:=99
+	// +kubebuilder:validation:Minimum:=0
+	// +kubebuilder:default:=50
+	// +optional
+	Priority *int `json:"priority,omitempty"`
 }
 
 // IsPresent method checks if the module is present
@@ -33,14 +36,20 @@ type KernelModuleConfig struct {
 	logger logr.Logger
 	// This file is for loading the kernel modules at boot
 	// by systemd-modules-load
-	filePath string
+	filePath     string
+	prevFilePath string
 }
 
-func NewKernelModuleConfig(modules KernelModules, log logr.Logger) KernelModuleConfig {
+func NewKernelModuleConfig(modules KernelModules, log logr.Logger, name string) KernelModuleConfig {
+	folder := "/etc/modules-load.d"
+	filePath := fmt.Sprintf("%s/%d-nco-%s.conf", folder, *modules.Priority, name)
+	prevFilePath := fmt.Sprintf("%s/nco.conf", folder)
+
 	return KernelModuleConfig{
 		KernelModules: modules,
 		logger:        log,
-		filePath:      "/etc/modules-load.d/nco.conf",
+		filePath:      filePath,
+		prevFilePath:  prevFilePath,
 	}
 }
 
@@ -66,6 +75,11 @@ func (c KernelModuleConfig) Reconcile() error {
 }
 
 func (c KernelModuleConfig) applyModule() error {
+	// remove prevFilePath as it's not needed anymore
+	if err := deleteFileIfExists(c.prevFilePath); err != nil {
+		return fmt.Errorf("failed to remove file: %w", err)
+	}
+
 	isCurrent, err := c.checkCurrentConfig()
 	if err != nil {
 		return fmt.Errorf("failed to check current config: %w", err)
@@ -93,11 +107,13 @@ func (c KernelModuleConfig) applyModule() error {
 }
 
 func (c KernelModuleConfig) removeModule() error {
-	err := os.Remove(c.filePath)
-	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("failed to delete file: %w", err)
-		}
+	// remove prevFilePath as it's not needed anymore
+	if err := deleteFileIfExists(c.prevFilePath); err != nil {
+		return fmt.Errorf("failed to remove file: %w", err)
+	}
+
+	if err := deleteFileIfExists(c.filePath); err != nil {
+		return fmt.Errorf("failed to delete file: %w", err)
 	}
 
 	// Modules shouldn't be unloaded, next host reboot should fix

@@ -13,7 +13,6 @@ import (
 
 const (
 	grubCfgPath           = "/boot/grub/grub.cfg"
-	grubDConfigPath       = "/host/etc/default/grub.d/99-nco.cfg"
 	grubKernelBeginMarker = "# BEGIN MARKER NCO GRUB CONFIG"
 	grubKernelEndMarker   = "# END MARKER NCO GRUB CONFIG"
 )
@@ -27,6 +26,12 @@ type GrubKernel struct {
 	CmdlineArgs []string `json:"args,omitempty"`
 	// +kubebuilder:Enum="present";"absent"
 	State string `json:"state,omitempty"`
+	// Priority for grub config (default: 50)
+	// +kubebuilder:validation:Maximum:=99
+	// +kubebuilder:validation:Minimum:=0
+	// +kubebuilder:default:=50
+	// +optional
+	Priority *int `json:"priority,omitempty"`
 }
 
 // IsPresent method checks if the module is present
@@ -39,7 +44,23 @@ func (g GrubKernel) IsPresent() bool {
 
 type GrubKernelConfig struct {
 	GrubKernel
-	Log logr.Logger
+	Log          logr.Logger
+	fileName     string
+	prevFileName string
+}
+
+func NewGrubKernelConfig(grubKernel GrubKernel, logger logr.Logger, name string) GrubKernelConfig {
+
+	folder := "/host/etc/default/grub.d"
+	fileName := fmt.Sprintf("%s/%d-nco-%s.cfg", folder, *grubKernel.Priority, name)
+	prevFileName := fmt.Sprintf("%s/99-nco.cfg", folder)
+
+	return GrubKernelConfig{
+		GrubKernel:   grubKernel,
+		Log:          logger,
+		fileName:     fileName,
+		prevFileName: prevFileName,
+	}
 }
 
 // Reconcile applies or removes the GRUB configuration based on the State field.
@@ -69,6 +90,11 @@ func (gkc GrubKernelConfig) Reconcile() error {
 
 // applyModule applies the GRUB configuration changes.
 func (gkc GrubKernelConfig) applyModule() error {
+	// remove previous grub config as it's not needed anymore
+	if err := deleteFileIfExists(gkc.prevFileName); err != nil {
+		return fmt.Errorf("failed to delete prevFileName: %w", err)
+	}
+
 	// Build the desired content for the file
 	var blockLines []string
 	if len(gkc.CmdlineArgs) > 0 {
@@ -89,7 +115,7 @@ func (gkc GrubKernelConfig) applyModule() error {
 
 	// Check if the file already has the desired content
 	if desiredBlock != "" {
-		matches, err := checkFileContents(grubDConfigPath, desiredBlock)
+		matches, err := checkFileContents(gkc.fileName, desiredBlock)
 		if err != nil {
 			return fmt.Errorf("error checking file contents: %w", err)
 		}
@@ -108,7 +134,7 @@ func (gkc GrubKernelConfig) applyModule() error {
 
 	// Write the configuration to the file
 	if desiredBlock != "" {
-		if err := writeFile(grubDConfigPath, desiredBlock); err != nil {
+		if err := writeFile(gkc.fileName, desiredBlock); err != nil {
 			return fmt.Errorf("error writing GRUB configuration: %w", err)
 		}
 		gkc.Log.V(1).Info("GRUB configuration updated")
@@ -122,10 +148,15 @@ func (gkc GrubKernelConfig) applyModule() error {
 
 // removeModule reverts the GRUB configuration changes.
 func (gkc GrubKernelConfig) removeModule() error {
+	// remove previous grub config as it's not needed anymore
+	if err := deleteFileIfExists(gkc.prevFileName); err != nil {
+		return fmt.Errorf("failed to delete prevFileName: %w", err)
+	}
+
 	// Check if the file exists
-	if _, err := os.Stat(grubDConfigPath); err == nil {
+	if _, err := os.Stat(gkc.fileName); err == nil {
 		// The file exists, delete it
-		if err := os.Remove(grubDConfigPath); err != nil {
+		if err := os.Remove(gkc.fileName); err != nil {
 			return fmt.Errorf("error deleting configuration file: %w", err)
 		}
 		// Run update-grub to apply changes

@@ -20,7 +20,7 @@ extract_spec_values() {
 check_kernel_parameters() {
     local node_name=$1
 
-    for idx in $(yq '.spec.kernelParameters.parameters | keys' $NODECONFIG_FILE | wc -l); do
+    for idx in $(seq $(yq '.spec.kernelParameters.parameters | keys' $NODECONFIG_FILE | wc -l)); do
         local param_name=$(yq ".spec.kernelParameters.parameters[$((idx-1))].name" $NODECONFIG_FILE)
         local expected_value=$(yq ".spec.kernelParameters.parameters[$((idx-1))].value" $NODECONFIG_FILE)
 
@@ -35,13 +35,30 @@ check_kernel_parameters() {
             echo "❌  Error: Kernel parameter $param_name is $value on $node_name"
         fi
     done
+
+    echo "➖  Checking kernel parameter file on $node_name..."
+    # TODO: get resource from cluster to get namespace and defaults
+    #local resourceNamespace=$(yq '.metadata.namespace' $NODECONFIG_FILE)
+    local resourceNamespace="nco-tests-ns"
+    local resourceName=$(yq '.metadata.name' $NODECONFIG_FILE)
+    local priority=$(yq ".spec.kernelParameters.priority" $NODECONFIG_FILE)
+    local folder="/etc/sysctl.d"
+    local fileName="${priority}-nco-${resourceNamespace}-${resourceName}.conf"
+    local check_cmd="ls -l ${folder}/${fileName}"
+    run_on_node $node_name "$check_cmd" 2>&1 > /dev/null
+    local rc=$?
+    if [ $rc -eq 0 ]; then
+        echo "✅  Success: file present in correct location"
+    else
+        echo "❌  Error: file not present in expected location"
+    fi
 }
 
 # Function to check host entries on each node
 check_hosts() {
     local node_name="$1"
 
-    for idx in $(yq '.spec.hosts.hosts | keys' $NODECONFIG_FILE | wc -l); do
+    for idx in $(seq $(yq '.spec.hosts.hosts | keys' $NODECONFIG_FILE | wc -l)); do
         local hostname=$(yq ".spec.hosts.hosts[$((idx-1))].hostname" $NODECONFIG_FILE)
         local ip=$(yq ".spec.hosts.hosts[$((idx-1))].ip" $NODECONFIG_FILE)
 
@@ -65,7 +82,7 @@ check_hosts() {
 check_kernel_modules() {
     local node_name=$1
 
-    for idx in $(yq '.spec.kernelModules.modules | keys' $NODECONFIG_FILE | wc -l); do
+    for idx in $(seq $(yq '.spec.kernelModules.modules | keys' $NODECONFIG_FILE | wc -l)); do
         local module=$(yq ".spec.kernelModules.modules[$((idx-1))]" $NODECONFIG_FILE)
         echo "➖  Checking kernel module $module on $node_name..."
         local check_cmd="modinfo $module"
@@ -82,7 +99,7 @@ check_kernel_modules() {
 check_systemd_units() {
     local node_name=$1
 
-    for idx in $(yq '.spec.systemdUnits.units | keys' $NODECONFIG_FILE | wc -l); do
+    for idx in $(seq $(yq '.spec.systemdUnits.units | keys' $NODECONFIG_FILE | wc -l)); do
         local name=$(yq ".spec.systemdUnits.units[$((idx-1))].name" $NODECONFIG_FILE)
         echo "➖  Checking systemd unit $name on $node_name..."
         local check_cmd="systemctl --no-pager status nco-$name"
@@ -99,7 +116,7 @@ check_systemd_units() {
 check_systemd_overrides() {
     local node_name=$1
 
-    for idx in $(yq '.spec.systemdOverrides.overrides | keys' $NODECONFIG_FILE | wc -l); do
+    for idx in $(seq $(yq '.spec.systemdOverrides.overrides | keys' $NODECONFIG_FILE | wc -l)); do
         local serviceName=$(yq ".spec.systemdOverrides.overrides[$((idx-1))].name" $NODECONFIG_FILE)
         local contents=$(yq ".spec.systemdOverrides.overrides[$((idx-1))].file" $NODECONFIG_FILE | tr '\n' ',')
         echo "➖ Checking systemd override on unit $serviceName..."
@@ -116,7 +133,7 @@ check_systemd_overrides() {
 
 check_block_in_files() {
     local node_name=$1
-    for idx in $(yq '.spec.blockInFiles.blocks | keys' $NODECONFIG_FILE | wc -l); do
+    for idx in $(seq $(yq '.spec.blockInFiles.blocks | keys' $NODECONFIG_FILE | wc -l)); do
         local filename=$(yq ".spec.blockInFiles.blocks[$((idx-1))].filename" $NODECONFIG_FILE)
         local content=$(yq ".spec.blockInFiles.blocks[$((idx-1))].content" $NODECONFIG_FILE | tr '\n' ',')
         echo "➖ Checking block in file on file $filename..."

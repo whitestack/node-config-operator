@@ -25,6 +25,7 @@ spec:
     - name: kernel.hostname
       value: test-hostname
     state: present
+    priority: 90
   kernelModules:
     modules:
     - multipath

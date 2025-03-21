@@ -279,3 +279,11 @@ func checkFileExists(path string) (bool, error) {
 	}
 	return false, err
 }
+
+func deleteFileIfExists(path string) error {
+	err := os.Remove(path)
+	if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
+}

@@ -20,7 +20,11 @@ spec:
     - name: fs.file-max
       value: "54321"
     state: present
+    priority: 90
 ```
+
+You can add an optional `priority` key to set the priority for these parameters.
+Default priority is 50
 
 ## Etc hosts
 
@@ -119,8 +123,12 @@ spec:
         [Service]
         ExecStart=
         ExecStart=sleep 2000
+      priority: 20
     state: present
 ```
+
+You can add an optional `priority` key to set the priority for each override.
+Default priority is 50
 
 ## Kernel modules
 
@@ -145,7 +153,11 @@ spec:
     - multipath
     - dm_multipath
     state: present
+    priority: 50
 ```
+
+You can add an optional `priority` key to set the priority for these modules.
+Default priority is 50
 
 ## Block in File
 
@@ -197,8 +209,8 @@ spec:
 > This module requires that the `managerConfig.hostfsEnabled` option is set to
 > true
 
-This module adds a text to a new or existing certificate file. For example for a file in
-`/etc/ssl/certs/whitestack.crt`:
+This module adds a text to a new or existing certificate file. For example for a
+file in `/etc/ssl/certs/whitestack.crt`:
 
 With this CR:
 
@@ -243,8 +255,8 @@ spec:
     state: present
 ```
 
-You may include multiple certificates in a single file, and multiple files in a single
-custom resource.
+You may include multiple certificates in a single file, and multiple files in a
+single custom resource.
 
 ## Apt packages
 
@@ -275,9 +287,10 @@ the `ssh` package.
 
 ## Crontabs
 
-Crontab entries can be managed by creating or removing files in the `/etc/cron.d` directory. Each entry specifies a 
-scheduled task to be executed under a specific user. For example, to schedule a daily backup script to run as the `root`
-user, you would create a crontab entry like this:
+Crontab entries can be managed by creating or removing files in the
+`/etc/cron.d` directory. Each entry specifies a scheduled task to be executed
+under a specific user. For example, to schedule a daily backup script to run as
+the `root` user, you would create a crontab entry like this:
 
 ```shell
 @daily root /usr/bin/backup.sh # daily-backup
@@ -308,20 +321,23 @@ spec:
     state: "present"
 ```
 
-### Explanation of Fields
+Fiels:
 
-**name** : A unique identifier for the cron job. This is used to generate the filename in `/etc/cron.d`.
-**special_time** : (Optional) Specifies a predefined schedule such as `@daily`, `@reboot`, `@weekly`, etc.
-**minute , hour , dayOfMonth , month , dayOfWeek** : (Optional) Define the schedule explicitly. Defaults to `*` if not specified.
-**job** : The command or script to execute.
-**user** : The user under which the task will run.
+- name: A unique identifier for the cron job. This is used to generate the
+  filename in `/etc/cron.d`.
+- special_time: (Optional) Specifies a predefined schedule such as `@daily`,
+  `@reboot`, `@weekly`, etc.
+- minute , hour , dayOfMonth , month , dayOfWeek: (Optional) Define the schedule
+  explicitly. Defaults to `*` if not specified.
+- job: The command or script to execute.
+- user: The user under which the task will run.
 
 ## GRUB Kernel Config
 
-The GRUB configuration can be managed by creating or removing files in 
-the `/etc/default/grub.d` directory. This approach enables modular and 
-idempotent management of GRUB settings, such as kernel command-line arguments
-and the default kernel version.
+The GRUB configuration can be managed by creating or removing files in the
+`/etc/default/grub.d` directory. This approach enables modular and idempotent
+management of GRUB settings, such as kernel command-line arguments and the
+default kernel version.
 
 For example, to set specific kernel arguments and select a default kernel
 version, you would create a configuration file like this:
@@ -347,14 +363,17 @@ spec:
       - "quiet"
       - "splash"
     state: "present"
+    priority: 55
 ```
 
-### Explanation of Fields
+You can add an optional `priority` key to set the priority for this
+configuration. Default priority is 50
 
-- **kernelVersion (Optional):** Specifies the Linux kernel version
-to set as the default (e.g., "5.15.0-91-generic"). If not provided,
-the default kernel will remain unchanged.
+Fields:
 
-- **args (Optional):** A list of kernel command-line arguments to be
-added to GRUB_CMDLINE_LINUX. If not specified, no changes will be made
-to the kernel command-line arguments.
+- kernelVersion: (Optional) Specifies the Linux kernel version to set as the
+  default (e.g., "5.15.0-91-generic"). If not provided, the default kernel
+  will remain unchanged.
+- args: (Optional) A list of kernel command-line arguments to be added to
+  `GRUB_CMDLINE_LINUX`. If not specified, no changes will be made to the
+  kernel command-line arguments.

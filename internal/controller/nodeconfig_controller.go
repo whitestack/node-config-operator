@@ -102,6 +102,8 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		_ = r.setStatus(ctx, req.NamespacedName, configurationv1beta2.NodeStatusInProgress, "")
 	}
 
+	namespacedName := nodeConfig.Namespace + "-" + nodeConfig.Name
+
 	configs := []modules.Config{}
 	// START of config types handling
 	if len(nodeConfig.Spec.AptPackages.Packages) != 0 {
@@ -119,6 +121,7 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			modules.NewKernelModuleConfig(
 				nodeConfig.Spec.KernelModules,
 				logger.WithName("kernel-modules"),
+				namespacedName,
 			),
 		)
 	}
@@ -129,6 +132,7 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			modules.NewKernelParameterConfig(
 				nodeConfig.Spec.KernelParameters,
 				logger.WithName("kernel-parameter"),
+				namespacedName,
 			),
 		)
 	}
@@ -179,6 +183,7 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			modules.NewSystemdOverrideConfig(
 				nodeConfig.Spec.SystemdOverrides,
 				logger.WithName("systemd-overrides"),
+				namespacedName,
 			),
 		)
 	}

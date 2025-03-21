@@ -1,9 +1,7 @@
 package modules
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"os/exec"
 	"strings"
@@ -16,6 +14,12 @@ type KernelParameters struct {
 	Parameters []KernelParameterKV `json:"parameters,omitempty"`
 	// +kubebuilder:Enum="present";"absent"
 	State string `json:"state,omitempty"`
+	// Priority to set for these parameters (default: 50)
+	// +kubebuilder:validation:Maximum:=99
+	// +kubebuilder:validation:Minimum:=0
+	// +kubebuilder:default:=50
+	// +optional
+	Priority *int `json:"priority,omitempty"`
 }
 
 // IsPresent method checks if the module is present
@@ -35,15 +39,21 @@ type KernelParameterKV struct {
 
 type KernelParameterConfig struct {
 	KernelParameters
-	logger   logr.Logger
-	filePath string
+	logger       logr.Logger
+	filePath     string
+	prevFilePath string
 }
 
-func NewKernelParameterConfig(configs KernelParameters, log logr.Logger) KernelParameterConfig {
+func NewKernelParameterConfig(configs KernelParameters, log logr.Logger, name string) KernelParameterConfig {
+	folder := "/etc/sysctl.d/"
+
+	filePath := fmt.Sprintf("%s/%d-nco-%s.conf", folder, *configs.Priority, name)
+
 	return KernelParameterConfig{
 		KernelParameters: configs,
 		logger:           log,
-		filePath:         "/etc/sysctl.d/99-nco.conf",
+		filePath:         filePath,
+		prevFilePath:     "/etc/sysctl.d/99-nco.conf",
 	}
 }
 
@@ -69,6 +79,12 @@ func (c KernelParameterConfig) Reconcile() error {
 }
 
 func (c KernelParameterConfig) applyModule() error {
+	// delete prevFilePath as it's not needed anymore
+	// as we use a different file for each NCO resource
+	if err := deleteFileIfExists(c.prevFilePath); err != nil {
+		return fmt.Errorf("failed to remove prevFilePath: %w", err)
+	}
+
 	// check current configuration
 	newParameters := make([]string, len(c.Parameters))
 	for i, parameters := range c.Parameters {
@@ -91,7 +107,6 @@ func (c KernelParameterConfig) applyModule() error {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
-	// apply /etc/sysctl.d/99-nco.conf configuration
 	cmd := exec.Command("sysctl", "-p", c.filePath)
 	err = cmd.Run()
 	if err != nil {
@@ -102,16 +117,20 @@ func (c KernelParameterConfig) applyModule() error {
 }
 
 func (c KernelParameterConfig) removeModule() error {
-	// Attempt to remove the file
-	err := os.Remove(c.filePath)
-	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return err
-		}
+	// delete prevFilePath as it's not needed anymore
+	// as we use a different file for each NCO resource
+	if err := deleteFileIfExists(c.prevFilePath); err != nil {
+		return fmt.Errorf("failed to remove prevFilePath: %w", err)
 	}
+
+	// Attempt to remove the file
+	if err := deleteFileIfExists(c.filePath); err != nil {
+		return fmt.Errorf("failed to remove file: %w", err)
+	}
+
 	// reload sysctl configuration
 	cmd := exec.Command("sysctl", "-p")
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("Error applying sysctl config: %s", err)
 	}

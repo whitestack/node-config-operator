@@ -11,8 +11,13 @@ import (
 
 const (
 	overrideBasePath = "/host/etc/systemd/system"
-	overrideName     = "90-nco-override.conf"
+	overridePrevName = "90-nco-override.conf"
 	overrideHeader   = "# FILE MANAGED BY NCO - CHANGES TO THIS FILE WILL BE OVERWRITTEN"
+)
+
+const (
+	SERVICE_TYPE = "service"
+	SLICE_TYPE   = "slice"
 )
 
 // +kubebuilder:object:generate=true
@@ -30,34 +35,43 @@ func (s SystemdOverrides) IsPresent() bool {
 	return false
 }
 
+// +kubebuilder:object:generate=true
 type SystemdOverride struct {
 	// Name of unit to override, must have service or slice suffix
 	Name string `json:"name"`
 	// Contents of file
 	File string `json:"file"`
+	// Priority to set for these overrides (default: 50)
+	// +kubebuilder:validation:Maximum:=99
+	// +kubebuilder:validation:Minimum:=0
+	// +kubebuilder:default:=50
+	// +optional
+	Priority *int `json:"priority,omitempty"`
 }
 
 type systemdOverride struct {
 	unitName    string
 	unitType    string
 	fileContent string
+	priority    *int
 }
 
 type SystemdOverrideConfig struct {
-	overrides []systemdOverride
-	state     string
-	logger    logr.Logger
+	overrides    []systemdOverride
+	state        string
+	logger       logr.Logger
+	resourceName string
 }
 
-func NewSystemdOverrideConfig(overrides SystemdOverrides, logger logr.Logger) SystemdOverrideConfig {
+func NewSystemdOverrideConfig(overrides SystemdOverrides, logger logr.Logger, name string) SystemdOverrideConfig {
 	ov := make([]systemdOverride, len(overrides.Overrides))
 
 	for i, override := range overrides.Overrides {
 		var unitType string
 		if strings.HasSuffix(override.Name, ".service") {
-			unitType = "service"
+			unitType = SERVICE_TYPE
 		} else if strings.HasSuffix(override.Name, ".slice") {
-			unitType = "slice"
+			unitType = SLICE_TYPE
 		} else {
 			logger.Info("Warning: unit type not supported", "unitName", override.Name)
 			continue
@@ -67,13 +81,15 @@ func NewSystemdOverrideConfig(overrides SystemdOverrides, logger logr.Logger) Sy
 			unitName:    override.Name,
 			unitType:    unitType,
 			fileContent: override.File,
+			priority:    override.Priority,
 		}
 	}
 
 	return SystemdOverrideConfig{
-		overrides: ov,
-		state:     overrides.State,
-		logger:    logger,
+		overrides:    ov,
+		state:        overrides.State,
+		logger:       logger,
+		resourceName: name,
 	}
 }
 
@@ -108,12 +124,20 @@ func (s SystemdOverrideConfig) Reconcile() error {
 func (s SystemdOverrideConfig) applyModule() error {
 	needsRestart := make([]bool, len(s.overrides))
 	for i, override := range s.overrides {
+		folderPath := fmt.Sprintf("%s/%s.d", overrideBasePath, override.unitName)
+
+		// delete previous file as it's not needed anymore
+		prevFileName := fmt.Sprintf("%s/%s", folderPath, overridePrevName)
+		if err := deleteFileIfExists(prevFileName); err != nil {
+			return fmt.Errorf("failed to delete prevFileName: %w", err)
+		}
+
 		// Override files location is in
 		// `/etc/systemd/system/<unit-name>.d/<override-file>`, for example
 		// `/etc/systemd/system/getty@tty2.service.d/override.conf`so we build
 		// the complete file path with the unit information
-		folderPath := overrideBasePath + "/" + override.unitName + ".d"
-		filePath := folderPath + "/" + overrideName
+		overrideName := fmt.Sprintf("%d-nco-%s-override.conf", *override.priority, s.resourceName)
+		filePath := fmt.Sprintf("%s/%s", folderPath, overrideName)
 		content := overrideHeader + "\n" + override.fileContent
 
 		if err := checkOrCreateDirectory(folderPath); err != nil {
@@ -144,7 +168,7 @@ func (s SystemdOverrideConfig) applyModule() error {
 		// override has changed.
 		// The slice's override will apply to new processes or to all processes
 		// on system boot
-		if override.unitType != "service" || !needsRestart[i] {
+		if override.unitType != SERVICE_TYPE || !needsRestart[i] {
 			continue
 		}
 
@@ -158,11 +182,18 @@ func (s SystemdOverrideConfig) applyModule() error {
 
 func (s SystemdOverrideConfig) removeModule() error {
 	for _, override := range s.overrides {
-		folderName := override.unitName + ".d"
-		filePath := overrideBasePath + "/" + folderName + "/" + overrideName
+		folderPath := fmt.Sprintf("%s/%s.d", overrideBasePath, override.unitName)
 
-		err := os.Remove(filePath)
-		if err != nil {
+		// delete previous file as it's not needed anymore
+		prevFileName := fmt.Sprintf("%s/%s", folderPath, overridePrevName)
+		if err := deleteFileIfExists(prevFileName); err != nil {
+			return fmt.Errorf("failed to delete prevFileName: %w", err)
+		}
+
+		overrideName := fmt.Sprintf("%d-nco-%s-override.conf", *override.priority, s.resourceName)
+		filePath := fmt.Sprintf("%s/%s", folderPath, overrideName)
+
+		if err := deleteFileIfExists(filePath); err != nil {
 			return fmt.Errorf("failed to delete file: %w", err)
 		}
 	}
@@ -174,7 +205,7 @@ func (s SystemdOverrideConfig) removeModule() error {
 	}
 
 	for _, override := range s.overrides {
-		if override.unitType != "service" {
+		if override.unitType != SERVICE_TYPE {
 			continue
 		}
 

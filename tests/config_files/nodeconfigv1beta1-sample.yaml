@@ -16,6 +16,7 @@ spec:
     - name: net.ipv4.udp_mem
       value: "12348030 16464042 24696060"
     state: present
+    priority: 90
   hosts:
     hosts:
     # you can add multiple entries for the same IP
@@ -39,7 +40,7 @@ spec:
         Description=example systemd service unit file.
 
         [Service]
-        ExecStart=sleep 1000
+        ExecStart=/usr/bin/sleep 1000
 
         [Install]
         WantedBy=multi-user.target
@@ -50,8 +51,9 @@ spec:
       file: |-
         [Service]
         ExecStart=
-        ExecStart=sleep 2000
+        ExecStart=/usr/bin/sleep 2000
         User=root
+      priority: 90
     state: present
   blockInFiles:
     blocks:

@@ -125,6 +125,12 @@ spec:
                     items:
                       type: string
                     type: array
+                  priority:
+                    default: 50
+                    description: 'Priority to set for these modules (default: 50)'
+                    maximum: 99
+                    minimum: 0
+                    type: integer
                   state:
                     type: string
                 type: object
@@ -143,6 +149,12 @@ spec:
                           type: string
                       type: object
                     type: array
+                  priority:
+                    default: 50
+                    description: 'Priority to set for these parameters (default: 50)'
+                    maximum: 99
+                    minimum: 0
+                    type: integer
                   state:
                     type: string
                 type: object
@@ -190,6 +202,13 @@ spec:
                           description: Name of unit to override, must have service or
                             slice suffix
                           type: string
+                        priority:
+                          default: 50
+                          description: 'Priority to set for these overrides (default:
+                            50)'
+                          maximum: 99
+                          minimum: 0
+                          type: integer
                       required:
                       - file
                       - name
@@ -388,6 +407,12 @@ spec:
                     description: KernelVersion specifies the Linux kernel version to
                       be used (e.g. "5.15.0-91-generic")
                     type: string
+                  priority:
+                    default: 50
+                    description: 'Priority for grub config (default: 50)'
+                    maximum: 99
+                    minimum: 0
+                    type: integer
                   state:
                     type: string
                 type: object
@@ -416,6 +441,12 @@ spec:
                     items:
                       type: string
                     type: array
+                  priority:
+                    default: 50
+                    description: 'Priority to set for these modules (default: 50)'
+                    maximum: 99
+                    minimum: 0
+                    type: integer
                   state:
                     type: string
                 type: object
@@ -434,6 +465,12 @@ spec:
                           type: string
                       type: object
                     type: array
+                  priority:
+                    default: 50
+                    description: 'Priority to set for these parameters (default: 50)'
+                    maximum: 99
+                    minimum: 0
+                    type: integer
                   state:
                     type: string
                 type: object
@@ -481,6 +518,13 @@ spec:
                           description: Name of unit to override, must have service or
                             slice suffix
                           type: string
+                        priority:
+                          default: 50
+                          description: 'Priority to set for these overrides (default:
+                            50)'
+                          maximum: 99
+                          minimum: 0
+                          type: integer
                       required:
                       - file
                       - name
