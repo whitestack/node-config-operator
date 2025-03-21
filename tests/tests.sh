@@ -40,3 +40,7 @@ for node in $NODES; do
 done
 
 echo "🎉  All tests completed successfully."
+
+# TODO: Add tests for status check. Currently the resource enters errors status
+# because it can't run in minikube nodes. Wait until the tests are migrated to
+# kubefire

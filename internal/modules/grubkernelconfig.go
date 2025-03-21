@@ -3,11 +3,12 @@ package modules
 import (
 	"errors"
 	"fmt"
-	"github.com/go-logr/logr"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/go-logr/logr"
 )
 
 const (

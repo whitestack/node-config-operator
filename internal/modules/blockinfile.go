@@ -49,16 +49,19 @@ func (b BlockInFileConfig) Reconcile() error {
 		return nil
 	}
 
+	moduleError := ModuleError{"blockInFiles", nil}
 	if b.State == "present" {
 		b.Log.V(1).Info("applying module")
 		if err := b.applyModule(); err != nil {
-			return fmt.Errorf("failed to apply module: %w", err)
+			moduleError.error = err
+			return moduleError
 		}
 		b.Log.V(1).Info("module applied")
 	} else if b.State == "absent" {
 		b.Log.V(1).Info("removing module")
 		if err := b.removeModule(); err != nil {
-			return fmt.Errorf("failed to remove module: %w", err)
+			moduleError.error = err
+			return moduleError
 		}
 		b.Log.V(1).Info("module removed")
 	}

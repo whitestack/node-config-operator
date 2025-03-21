@@ -3,8 +3,9 @@ package modules
 import (
 	"errors"
 	"fmt"
-	"github.com/go-logr/logr"
 	"os"
+
+	"github.com/go-logr/logr"
 )
 
 const (
@@ -73,16 +74,19 @@ func (c CrontabsConfig) Reconcile() error {
 		return nil
 	}
 
+	moduleError := ModuleError{"crontabs", nil}
 	if c.State == "present" {
 		c.Log.V(1).Info("applying module")
 		if err := c.applyModule(); err != nil {
-			return fmt.Errorf("failed to apply module: %w", err)
+			moduleError.error = err
+			return moduleError
 		}
 		c.Log.V(1).Info("module applied")
 	} else if c.State == "absent" {
 		c.Log.V(1).Info("removing module")
 		if err := c.removeModule(); err != nil {
-			return fmt.Errorf("failed to remove module: %w", err)
+			moduleError.error = err
+			return moduleError
 		}
 		c.Log.V(1).Info("module removed")
 	}
