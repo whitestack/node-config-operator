@@ -21,6 +21,9 @@ spec:
       containers:
       - args:
         - --health-probe-bind-address=:{{ .Values.controllerManager.manager.healthPort }}
+        {{- if .Values.managerConfig.ignoreNodeReady }}
+        - --ignore-node-ready=true
+        {{- end }}
         command:
         - /manager
         env:

@@ -86,6 +86,11 @@ func main() {
 		Level: uberzap.DebugLevel,
 	}
 	opts.BindFlags(flag.CommandLine)
+
+	var ignoreNodeReady bool
+	flag.BoolVar(&ignoreNodeReady, "ignore-node-ready", false,
+		"If set, reconcile a node even if it has a NotReady status")
+
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
@@ -164,9 +169,10 @@ func main() {
 	}
 
 	if err = (&controller.NodeConfigReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		NodeName: nodeName,
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		NodeName:        nodeName,
+		IgnoreNodeReady: ignoreNodeReady,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "NodeConfig")
 		os.Exit(1)
@@ -197,7 +203,7 @@ func main() {
 			setupLog.Error(err, "problem starting gocron scheduler")
 		}
 
-		s.NewJob(
+		_, err = s.NewJob(
 			gocron.DurationJob(5*time.Hour),
 			gocron.NewTask(func() {
 				log := ctrl.Log.WithName("apt-update")
@@ -208,6 +214,10 @@ func main() {
 			}),
 			gocron.JobOption(gocron.WithStartImmediately()),
 		)
+
+		if err != nil {
+			setupLog.Error(err, "failed to define new apt update job")
+		}
 
 		setupLog.Info("starting job scheduler")
 		s.Start()

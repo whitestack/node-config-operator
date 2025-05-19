@@ -50,8 +50,9 @@ const requeueAfterTime = 5 * time.Minute
 // NodeConfigReconciler reconciles a NodeConfig object
 type NodeConfigReconciler struct {
 	client.Client
-	Scheme   *runtime.Scheme
-	NodeName string
+	Scheme          *runtime.Scheme
+	NodeName        string
+	IgnoreNodeReady bool
 }
 
 // +kubebuilder:rbac:groups=configuration.whitestack.com,resources=nodeconfigs,verbs=get;list;watch;create;update;patch;delete
@@ -95,6 +96,23 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			logger.Info("selector doesn't match this node, ignoring...")
 			return ctrl.Result{}, nil
 		}
+	}
+
+	if !r.IgnoreNodeReady {
+		// Check if node status is Ready
+		isNodeReady, err := r.checkNodeStatus(ctx)
+		if err != nil {
+			logger.Error(err, "error while getting node status")
+			return ctrl.Result{}, err
+		}
+
+		if !isNodeReady {
+			logger.Info("node is not ready")
+			err := fmt.Errorf("node %s is not ready", r.NodeName)
+			_ = r.setStatus(ctx, req.NamespacedName, configurationv1beta2.NodeStatusError, err.Error())
+			return ctrl.Result{RequeueAfter: 5 * time.Minute}, err
+		}
+
 	}
 
 	nodeStatus, ok := nodeConfig.Status.Nodes[r.NodeName]
@@ -460,4 +478,29 @@ func (r *NodeConfigReconciler) checkNodeBySelector(
 		return false, nil
 	}
 	return true, nil
+}
+
+func (r NodeConfigReconciler) checkNodeStatus(ctx context.Context) (bool, error) {
+	node := &corev1.Node{}
+	if err := r.Get(ctx, ktypes.NamespacedName{Name: r.NodeName}, node); err != nil {
+		return false, err
+	}
+
+	if isNodeReady(node) {
+		return true, nil
+	}
+	return false, nil
+}
+
+func isNodeReady(node *corev1.Node) bool {
+	for _, c := range node.Status.Conditions {
+		if c.Type == corev1.NodeReady {
+			if c.Status == corev1.ConditionTrue {
+				return true
+			} else {
+				return false
+			}
+		}
+	}
+	return false
 }

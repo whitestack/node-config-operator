@@ -36,11 +36,13 @@ var _ = Describe("NodeConfig Controller", Ordered, func() {
 	const (
 		nodeName1 = "test-node-1"
 		nodeName2 = "test-node-2"
+		nodeName3 = "test-node-not-ready"
 	)
 
 	var (
 		controllerReconciler1 *NodeConfigReconciler
 		controllerReconciler2 *NodeConfigReconciler
+		controllerReconciler3 *NodeConfigReconciler
 	)
 
 	BeforeAll(func() {
@@ -55,21 +57,69 @@ var _ = Describe("NodeConfig Controller", Ordered, func() {
 			Scheme:   k8sClient.Scheme(),
 			NodeName: nodeName2,
 		}
+		controllerReconciler3 = &NodeConfigReconciler{
+			Client:   k8sClient,
+			Scheme:   k8sClient.Scheme(),
+			NodeName: nodeName3,
+		}
 
 		By("creating nodes in K8s")
 		node1 := &corev1.Node{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: nodeName1,
+				Labels: map[string]string{
+					"ready":                  "true",
+					"kubernetes.io/hostname": nodeName1,
+				},
+			},
+			Status: corev1.NodeStatus{
+				Conditions: []corev1.NodeCondition{
+					{
+						Type:   corev1.NodeReady,
+						Status: corev1.ConditionTrue,
+					},
+				},
 			},
 		}
 		node2 := &corev1.Node{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: nodeName2,
+				Labels: map[string]string{
+					"ready":                  "true",
+					"kubernetes.io/hostname": nodeName2,
+				},
+			},
+			Status: corev1.NodeStatus{
+				Conditions: []corev1.NodeCondition{
+					{
+						Type:   corev1.NodeReady,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+		}
+
+		node3 := &corev1.Node{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: nodeName3,
+				Labels: map[string]string{
+					"not-ready":              "true",
+					"kubernetes.io/hostname": nodeName3,
+				},
+			},
+			Status: corev1.NodeStatus{
+				Conditions: []corev1.NodeCondition{
+					{
+						Type:   corev1.NodeReady,
+						Status: corev1.ConditionFalse,
+					},
+				},
 			},
 		}
 
 		Expect(k8sClient.Create(ctx, node1)).To(Succeed())
 		Expect(k8sClient.Create(ctx, node2)).To(Succeed())
+		Expect(k8sClient.Create(ctx, node3)).To(Succeed())
 	})
 
 	Context("When reconciling an empty resource", func() {
@@ -89,6 +139,17 @@ var _ = Describe("NodeConfig Controller", Ordered, func() {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
+					},
+					Spec: configurationv1beta2.NodeConfigSpec{
+						NodeSelector: []metav1.LabelSelectorRequirement{
+							{
+								Key:      "ready",
+								Operator: metav1.LabelSelectorOpIn,
+								Values: []string{
+									"true",
+								},
+							},
+						},
 					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -165,6 +226,15 @@ var _ = Describe("NodeConfig Controller", Ordered, func() {
 							},
 							State: "present",
 						},
+						NodeSelector: []metav1.LabelSelectorRequirement{
+							{
+								Key:      "ready",
+								Operator: metav1.LabelSelectorOpIn,
+								Values: []string{
+									"true",
+								},
+							},
+						},
 					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
@@ -209,6 +279,69 @@ var _ = Describe("NodeConfig Controller", Ordered, func() {
 			conditionError := resource.Status.Conditions.Find(configurationv1beta2.NodeConditionError)
 			Expect(conditionError.Status).To(Equal(metav1.ConditionTrue))
 			Expect(conditionError.Reason).To(Equal("2/2 nodes in error"))
+		})
+	})
+
+	Context("When reconciling a node not ready", func() {
+		const resourceName = "test-resource-not-ready"
+
+		typeNamespacedName := types.NamespacedName{
+			Name:      resourceName,
+			Namespace: "default",
+		}
+		nodeconfig := &configurationv1beta2.NodeConfig{}
+
+		BeforeEach(func() {
+			By("creating the custom resource for the Kind NodeConfig")
+			err := k8sClient.Get(ctx, typeNamespacedName, nodeconfig)
+			if err != nil && errors.IsNotFound(err) {
+				resource := &configurationv1beta2.NodeConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      resourceName,
+						Namespace: "default",
+					},
+					Spec: configurationv1beta2.NodeConfigSpec{
+						NodeSelector: []metav1.LabelSelectorRequirement{
+							{
+								Key:      "not-ready",
+								Operator: metav1.LabelSelectorOpIn,
+								Values: []string{
+									"true",
+								},
+							},
+						},
+					},
+				}
+				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+			}
+
+		})
+
+		AfterEach(func() {
+			resource := &configurationv1beta2.NodeConfig{}
+			Expect(k8sClient.Get(ctx, typeNamespacedName, resource)).To(Succeed())
+
+			By("cleanup the specific resource instance NodeConfig")
+			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+		})
+
+		It("shouldn't reconcile if flag is not set", func() {
+			By("Trying to reconcile the request")
+			_, err := controllerReconciler3.Reconcile(ctx, reconcile.Request{
+				NamespacedName: typeNamespacedName,
+			})
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("should reconcile if flag is set", func() {
+			By("Setting IgnoreNodeReady flag")
+			controllerReconciler3.IgnoreNodeReady = true
+
+			By("Reconciling the resource")
+			_, err := controllerReconciler3.Reconcile(ctx, reconcile.Request{
+				NamespacedName: typeNamespacedName,
+			})
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 })

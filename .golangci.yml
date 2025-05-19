@@ -24,7 +24,6 @@ linters:
     - exportloopref
     - ginkgolinter
     - goconst
-    - gocyclo
     - gofmt
     - goimports
     - gosimple

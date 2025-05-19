@@ -40,8 +40,9 @@ index 967294d..b74acdb 100644
  managerConfig:
 -  aptEnabled: "false"
 -  hostfsEnabled: "false"
+-  validationModulePresentEnabled: "true"
 +  aptEnabled: false
 +  hostfsEnabled: false
-   validationModulePresentEnabled: "true"
++  validationModulePresentEnabled: true
  metricsService:
    ports:

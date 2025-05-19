@@ -66,3 +66,21 @@ spec:
 To remove a module's configuration you have to set the `state` field to `absent`
 and apply the CR to the cluster. You can check in the logs if it's been
 successfully removed.
+
+## Configuration
+
+In the helm chart you have these options to configure the `NodeConfig` operator:
+
+- `aptEnabled`: the [`apt` module](/docs/module_reference.md#apt-packages)
+  requires this flag to be set. It also schedules a job to update the apt
+  package cache every 5 hours.
+- `hostfsEnabled`: this flag mounts the host's root filesystem in the controller
+  pod. This flag is required for [some modules][modules].
+- `validationModulePresentEnabled`: this flag enables the validation that checks
+  if a module is defined multiple times for the same node selector in the
+  validation webhook.
+- `ignoreNodeReady`: by default the controller will not reconcile a resource if
+  the node is `NotReady` but you can ignore that check by setting this flag to
+  true.
+
+[modules]: ./module_reference.md

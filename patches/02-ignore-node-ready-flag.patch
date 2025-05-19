@@ -1,0 +1,26 @@
+diff --git a/chart/templates/daemonset.yaml b/chart/templates/daemonset.yaml
+index 32bfd37..6e201ad 100644
+--- a/chart/templates/daemonset.yaml
++++ b/chart/templates/daemonset.yaml
+@@ -21,6 +21,9 @@ spec:
+       containers:
+       - args:
+         - --health-probe-bind-address=:{{ .Values.controllerManager.manager.healthPort }}
++        {{- if .Values.managerConfig.ignoreNodeReady }}
++        - --ignore-node-ready=false
++        {{- end }}
+         command:
+         - /manager
+         env:
+diff --git a/chart/values.yaml b/chart/values.yaml
+index 1c3178a..3390fce 100644
+--- a/chart/values.yaml
++++ b/chart/values.yaml
+@@ -20,6 +20,7 @@ managerConfig:
+   aptEnabled: false
+   hostfsEnabled: false
+   validationModulePresentEnabled: true
++  ignoreNodeReady: false
+ metricsService:
+   ports:
+   - name: https
