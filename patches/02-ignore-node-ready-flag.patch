@@ -7,7 +7,7 @@ index 32bfd37..6e201ad 100644
        - args:
          - --health-probe-bind-address=:{{ .Values.controllerManager.manager.healthPort }}
 +        {{- if .Values.managerConfig.ignoreNodeReady }}
-+        - --ignore-node-ready=false
++        - --ignore-node-ready=true
 +        {{- end }}
          command:
          - /manager

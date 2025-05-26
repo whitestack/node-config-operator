@@ -246,7 +246,16 @@ spec:
     storage: false
     subresources:
       status: {}
-  - name: v1beta2
+  - additionalPrinterColumns:
+    - description: Status
+      jsonPath: .status.conditions[?(@.status=="True")].type
+      name: Status
+      type: string
+    - description: Reason
+      jsonPath: .status.conditions[?(@.status=="True")].reason
+      name: Reason
+      type: string
+    name: v1beta2
     schema:
       openAPIV3Schema:
         description: NodeConfig is the Schema for the nodeconfigs API
