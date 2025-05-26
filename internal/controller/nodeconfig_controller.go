@@ -70,7 +70,7 @@ type NodeConfigReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	nodeConfigFinalizer := fmt.Sprintf("nodeconfig.whitestack.com/finalizer-%s", r.NodeName)
+	oldNodeConfigFinalizer := fmt.Sprintf("nodeconfig.whitestack.com/finalizer-%s", r.NodeName)
 
 	logger := log.FromContext(ctx, "node", r.NodeName)
 
@@ -228,7 +228,7 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	// END of config types handling
 
 	if !nodeConfig.ObjectMeta.DeletionTimestamp.IsZero() {
-		if controllerutil.ContainsFinalizer(nodeConfig, nodeConfigFinalizer) {
+		if controllerutil.ContainsFinalizer(nodeConfig, oldNodeConfigFinalizer) {
 			// update object before deleting finalizer to avoid the error
 			// "the object has been modified..."
 			if err := r.Get(ctx, req.NamespacedName, nodeConfig); err != nil {
@@ -236,7 +236,7 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			}
 
 			// remove our finalizer from the list and update it.
-			controllerutil.RemoveFinalizer(nodeConfig, nodeConfigFinalizer)
+			controllerutil.RemoveFinalizer(nodeConfig, oldNodeConfigFinalizer)
 			if err := r.Update(ctx, nodeConfig); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -252,22 +252,6 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if err := config.Reconcile(); err != nil {
 			_ = r.setStatus(ctx, req.NamespacedName, configurationv1beta2.NodeStatusError, err.Error())
 			return ctrl.Result{RequeueAfter: requeueAfterTime}, err
-		}
-	}
-
-	// Add our finalizer to the object
-	// TODO: Change finalizer logic, we only need 1 finalizer instead of one
-	// for each node
-	if !controllerutil.ContainsFinalizer(nodeConfig, nodeConfigFinalizer) {
-		// update object before adding finalizer to avoid the error
-		// "the object has been modified..."
-		if err := r.Get(ctx, req.NamespacedName, nodeConfig); err != nil {
-			return ctrl.Result{}, err
-		}
-
-		controllerutil.AddFinalizer(nodeConfig, nodeConfigFinalizer)
-		if err := r.Update(ctx, nodeConfig); err != nil {
-			return ctrl.Result{}, err
 		}
 	}
 
