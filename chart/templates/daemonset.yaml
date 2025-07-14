@@ -103,6 +103,9 @@ spec:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master
         operator: Exists
+      {{- if .Values.controllerManager.manager.tolerations }}
+      {{- toYaml .Values.controllerManager.manager.tolerations | nindent 6 }}
+      {{- end }}
       volumes:
       - name: cert
         secret:
