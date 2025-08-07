@@ -107,6 +107,12 @@ func writeBlockToFile(path string, beginMarker, endMarker []byte, block []byte) 
 		endMarker = []byte("# END MARKER NCO")
 	}
 
+	dir := filepath.Dir(path)
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		return fmt.Errorf("error creating directory %s: %w", dir, err)
+	}
+
 	fileRead, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return fmt.Errorf("error opening file: %w", err)

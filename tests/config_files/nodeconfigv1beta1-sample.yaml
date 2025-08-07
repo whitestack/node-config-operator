@@ -57,7 +57,7 @@ spec:
     state: present
   blockInFiles:
     blocks:
-    - filename: "/test.file"
+    - filename: "/non-existent/test.file"
       content: |
         test1
         test2

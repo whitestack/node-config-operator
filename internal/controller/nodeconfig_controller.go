@@ -124,6 +124,26 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	configs := []modules.Config{}
 	// START of config types handling
+	if len(nodeConfig.Spec.BlockInFiles.Blocks) != 0 {
+		configs = append(
+			configs,
+			modules.BlockInFileConfig{
+				BlockInFiles: nodeConfig.Spec.BlockInFiles,
+				Log:          logger.WithName("block-in-files"),
+			},
+		)
+	}
+
+	if len(nodeConfig.Spec.Hosts.Hosts) != 0 {
+		configs = append(
+			configs,
+			modules.NewHostModuleConfig(
+				nodeConfig.Spec.Hosts,
+				logger.WithName("hosts"),
+			),
+		)
+	}
+
 	if len(nodeConfig.Spec.AptPackages.Packages) != 0 {
 		configs = append(
 			configs,
@@ -133,6 +153,7 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			},
 		)
 	}
+
 	if len(nodeConfig.Spec.KernelModules.Modules) != 0 {
 		configs = append(
 			configs,
@@ -152,26 +173,6 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 				logger.WithName("kernel-parameter"),
 				namespacedName,
 			),
-		)
-	}
-
-	if len(nodeConfig.Spec.Hosts.Hosts) != 0 {
-		configs = append(
-			configs,
-			modules.NewHostModuleConfig(
-				nodeConfig.Spec.Hosts,
-				logger.WithName("hosts"),
-			),
-		)
-	}
-
-	if len(nodeConfig.Spec.BlockInFiles.Blocks) != 0 {
-		configs = append(
-			configs,
-			modules.BlockInFileConfig{
-				BlockInFiles: nodeConfig.Spec.BlockInFiles,
-				Log:          logger.WithName("block-in-files"),
-			},
 		)
 	}
 
