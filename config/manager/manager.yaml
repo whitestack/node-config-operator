@@ -34,6 +34,9 @@ spec:
       - key: node-role.kubernetes.io/master
         operator: Exists
         effect: NoSchedule
+      - key: node-role.kubernetes.io/etcd
+        operator: Exists
+        effect: NoExecute
       hostNetwork: true
       hostPID: true
       hostIPC: true
