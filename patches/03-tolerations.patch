@@ -2,9 +2,9 @@ diff --git a/chart/templates/daemonset.yaml b/chart/templates/daemonset.yaml
 index 921aff5..8fd4adb 100644
 --- a/chart/templates/daemonset.yaml
 +++ b/chart/templates/daemonset.yaml
-@@ -103,6 +103,9 @@ spec:
-       - effect: NoSchedule
-         key: node-role.kubernetes.io/master
+@@ -106,6 +106,9 @@ spec:
+       - effect: NoExecute
+         key: node-role.kubernetes.io/etcd
          operator: Exists
 +      {{- if .Values.controllerManager.manager.tolerations }}
 +      {{- toYaml .Values.controllerManager.manager.tolerations | nindent 6 }}
