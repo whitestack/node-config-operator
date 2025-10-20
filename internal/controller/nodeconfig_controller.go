@@ -220,10 +220,11 @@ func (r *NodeConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if len(nodeConfig.Spec.GrubKernelConfig.CmdlineArgs) != 0 || nodeConfig.Spec.GrubKernelConfig.KernelVersion != "" {
 		configs = append(
 			configs,
-			modules.GrubKernelConfig{
-				GrubKernel: nodeConfig.Spec.GrubKernelConfig,
-				Log:        logger.WithName("grub-kernel-config"),
-			},
+			modules.NewGrubKernelConfig(
+				nodeConfig.Spec.GrubKernelConfig,
+				logger.WithName("grub-kernel-config"),
+				namespacedName,
+			),
 		)
 	}
 	// END of config types handling
