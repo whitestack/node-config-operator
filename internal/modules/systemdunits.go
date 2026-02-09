@@ -143,7 +143,12 @@ func (s SystemdUnitConfig) applyConfig() error {
 	}
 
 	for _, unit := range s.units {
-		_, err := execChroot("systemctl", "start", unit.serviceName)
+		_, err := execChroot("systemctl", "enable", unit.serviceName)
+		if err != nil {
+			return fmt.Errorf("failed to enable systemd service: %w", err)
+		}
+
+		_, err = execChroot("systemctl", "start", unit.serviceName)
 		if err != nil {
 			return fmt.Errorf("failed to start systemd service: %w", err)
 		}
