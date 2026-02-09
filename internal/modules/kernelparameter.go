@@ -12,7 +12,9 @@ import (
 // +kubebuilder:object:generate=true
 type KernelParameters struct {
 	Parameters []KernelParameterKV `json:"parameters,omitempty"`
-	// +kubebuilder:Enum="present";"absent"
+	// +kubebuilder:validation:Enum="present";"absent"
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default:="present"
 	State string `json:"state,omitempty"`
 	// Priority to set for these parameters (default: 50)
 	// +kubebuilder:validation:Maximum:=99

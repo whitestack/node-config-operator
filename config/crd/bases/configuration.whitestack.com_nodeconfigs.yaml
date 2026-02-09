@@ -54,10 +54,13 @@ spec:
                       type: object
                     type: array
                   state:
+                    default: present
                     enum:
                     - present
                     - absent
                     type: string
+                required:
+                - state
                 type: object
               blockInFiles:
                 description: List of blocks to add to files
@@ -85,7 +88,13 @@ spec:
                       type: object
                     type: array
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
+                required:
+                - state
                 type: object
               hosts:
                 description: List of hosts to install to /etc/hosts
@@ -103,7 +112,13 @@ spec:
                       type: object
                     type: array
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
+                required:
+                - state
                 type: object
               kernelModules:
                 description: List of kernel modules to load
@@ -119,7 +134,13 @@ spec:
                     minimum: 0
                     type: integer
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
+                required:
+                - state
                 type: object
               kernelParameters:
                 description: List of kernel parameters (sysctl). Each parameter should
@@ -143,7 +164,13 @@ spec:
                     minimum: 0
                     type: integer
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
+                required:
+                - state
                 type: object
               nodeSelector:
                 description: Defines the target nodes for this NodeConfig (optional,
@@ -204,12 +231,22 @@ spec:
                       type: object
                     type: array
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
+                required:
+                - state
                 type: object
               systemdUnits:
                 description: List of systemd units to install
                 properties:
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
                   units:
                     items:
@@ -226,6 +263,8 @@ spec:
                       - name
                       type: object
                     type: array
+                required:
+                - state
                 type: object
             type: object
           status:
@@ -285,10 +324,13 @@ spec:
                       type: object
                     type: array
                   state:
+                    default: present
                     enum:
                     - present
                     - absent
                     type: string
+                required:
+                - state
                 type: object
               blockInFiles:
                 description: List of blocks to add to files
@@ -316,7 +358,13 @@ spec:
                       type: object
                     type: array
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
+                required:
+                - state
                 type: object
               certificates:
                 description: List of Certificates to add to /etc/ssl/certs
@@ -334,6 +382,10 @@ spec:
                       type: object
                     type: array
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
                 type: object
               crontabs:
@@ -390,7 +442,13 @@ spec:
                       type: object
                     type: array
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
+                required:
+                - state
                 type: object
               grubKernelConfig:
                 description: GrubKernelConfig contains kernel version and command
@@ -413,7 +471,13 @@ spec:
                     minimum: 0
                     type: integer
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
+                required:
+                - state
                 type: object
               hosts:
                 description: List of hosts to install to /etc/hosts
@@ -431,7 +495,13 @@ spec:
                       type: object
                     type: array
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
+                required:
+                - state
                 type: object
               kernelModules:
                 description: List of kernel modules to load
@@ -447,7 +517,13 @@ spec:
                     minimum: 0
                     type: integer
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
+                required:
+                - state
                 type: object
               kernelParameters:
                 description: List of kernel parameters (sysctl). Each parameter should
@@ -471,7 +547,13 @@ spec:
                     minimum: 0
                     type: integer
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
+                required:
+                - state
                 type: object
               nodeSelector:
                 description: Defines the target nodes for this NodeConfig (optional,
@@ -532,12 +614,22 @@ spec:
                       type: object
                     type: array
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
+                required:
+                - state
                 type: object
               systemdUnits:
                 description: List of systemd units to install
                 properties:
                   state:
+                    default: present
+                    enum:
+                    - present
+                    - absent
                     type: string
                   units:
                     items:
@@ -554,6 +646,8 @@ spec:
                       - name
                       type: object
                     type: array
+                required:
+                - state
                 type: object
             type: object
           status:

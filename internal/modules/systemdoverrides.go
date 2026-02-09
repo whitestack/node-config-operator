@@ -23,7 +23,9 @@ const (
 // +kubebuilder:object:generate=true
 type SystemdOverrides struct {
 	Overrides []SystemdOverride `json:"overrides,omitempty"`
-	// +kubebuilder:Enum="present";"absent"
+	// +kubebuilder:validation:Enum="present";"absent"
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default:="present"
 	State string `json:"state,omitempty"`
 }
 

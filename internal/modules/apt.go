@@ -15,6 +15,8 @@ import (
 type AptPackages struct {
 	Packages []AptPackage `json:"packages,omitempty"`
 	// +kubebuilder:validation:Enum="present";"absent"
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default:="present"
 	State string `json:"state,omitempty"`
 }
 

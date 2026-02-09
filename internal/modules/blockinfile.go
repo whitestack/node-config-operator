@@ -11,7 +11,9 @@ import (
 // +kubebuilder:object:generate=true
 type BlockInFiles struct {
 	Blocks []BlockInFile `json:"blocks,omitempty"`
-	// +kubebuilder:Enum="present";"absent"
+	// +kubebuilder:validation:Enum="present";"absent"
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default:="present"
 	State string `json:"state,omitempty"`
 }
 

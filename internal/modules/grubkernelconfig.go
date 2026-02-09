@@ -24,7 +24,9 @@ type GrubKernel struct {
 	KernelVersion string `json:"kernelVersion,omitempty"`
 	// CmdlineArgs stores kernel boot parameters to be added to GRUB_CMDLINE_LINUX
 	CmdlineArgs []string `json:"args,omitempty"`
-	// +kubebuilder:Enum="present";"absent"
+	// +kubebuilder:validation:Enum="present";"absent"
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default:="present"
 	State string `json:"state,omitempty"`
 	// Priority for grub config (default: 50)
 	// +kubebuilder:validation:Maximum:=99

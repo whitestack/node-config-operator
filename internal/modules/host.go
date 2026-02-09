@@ -10,7 +10,9 @@ import (
 // +kubebuilder:object:generate=true
 type Hosts struct {
 	Hosts []Host `json:"hosts,omitempty"`
-	// +kubebuilder:Enum="present";"absent"
+	// +kubebuilder:validation:Enum="present";"absent"
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default:="present"
 	State string `json:"state,omitempty"`
 }
 

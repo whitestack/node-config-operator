@@ -16,7 +16,9 @@ const (
 // Crontabs defines the crontabs section in the NodeConfig resource.
 type Crontabs struct {
 	Entries []Crontab `json:"entries,omitempty"`
-	// +kubebuilder:Enum="present";"absent"
+	// +kubebuilder:validation:Enum="present";"absent"
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default:="present"
 	State string `json:"state,omitempty"`
 }
 

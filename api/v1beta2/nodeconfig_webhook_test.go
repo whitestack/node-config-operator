@@ -131,5 +131,32 @@ var _ = Describe("NodeConfig Webhook", func() {
 			_, err = validator.ValidateCreate(ctx, &nc2)
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		It("Should default module state to present when undefined", func() {
+			nc := NodeConfig{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "test-node-config-state-present",
+					Namespace: "default",
+				},
+				Spec: NodeConfigSpec{
+					Hosts: modules.Hosts{
+						Hosts: []modules.Host{
+							{
+								Hostname: "test.com",
+								IP:       "10.0.0.2",
+							},
+						},
+					},
+				},
+			}
+
+			err := k8sClient.Create(ctx, &nc)
+			Expect(err).NotTo(HaveOccurred())
+
+			stored := NodeConfig{}
+			err = k8sClient.Get(ctx, getNamespacedNameFromObject(&nc), &stored)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(stored.Spec.Hosts.State).To(Equal("present"))
+		})
 	})
 })
