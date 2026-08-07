@@ -141,17 +141,10 @@ func (nv *NodeConfigValidator) validateModulePresent(ctx context.Context, nc *No
 		}
 
 		// Validate all modules
+		// We only validate that the apt, grubkernelconfig, hosts, kernelmodules and
+		// kernelparameters do not repeat for the same nodeSelector
 		if nc.Spec.AptPackages.IsPresent() && nodeConfig.Spec.AptPackages.IsPresent() {
 			return getError("apt")
-		}
-		if nc.Spec.BlockInFiles.IsPresent() && nodeConfig.Spec.BlockInFiles.IsPresent() {
-			return getError("blockInFiles")
-		}
-		if nc.Spec.Certificates.IsPresent() && nodeConfig.Spec.Certificates.IsPresent() {
-			return getError("certificates")
-		}
-		if nc.Spec.Crontabs.IsPresent() && nodeConfig.Spec.Crontabs.IsPresent() {
-			return getError("crontabs")
 		}
 		if nc.Spec.GrubKernelConfig.IsPresent() && nodeConfig.Spec.GrubKernelConfig.IsPresent() {
 			return getError("grubKernelConfig")
@@ -164,12 +157,6 @@ func (nv *NodeConfigValidator) validateModulePresent(ctx context.Context, nc *No
 		}
 		if nc.Spec.KernelParameters.IsPresent() && nodeConfig.Spec.KernelParameters.IsPresent() {
 			return getError("kernelParameters")
-		}
-		if nc.Spec.SystemdUnits.IsPresent() && nodeConfig.Spec.SystemdUnits.IsPresent() {
-			return getError("systemdUnits")
-		}
-		if nc.Spec.SystemdOverrides.IsPresent() && nodeConfig.Spec.SystemdOverrides.IsPresent() {
-			return getError("systemdOverrides")
 		}
 	}
 	return nil
